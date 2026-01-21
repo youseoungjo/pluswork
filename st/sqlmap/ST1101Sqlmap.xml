@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : 점검데이터작성
+* Description : 점검데이터작성
+* Author : jit13
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveST0801     : 점검데이터 목록 조회
+*************************************************************************************-->
+<mapper namespace="st1101">
+    <select id="retrieveST1101List" parameterType="map" resultType="map" >
+        <![CDATA[ /* st1101.retrieveST1101List */ ]]>
+        SET ANSI_WARNINGS OFF
+        SET ARITHIGNORE ON
+        SET ARITHABORT OFF;
+        WITH EQ_PLAN
+        AS (
+           SELECT
+                  M.EQ_NO
+                , M.EQ_NM
+                , M.MNG_REC_NO
+                , M.EQ_LOC
+                , M.EQ_LINE
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND  B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = M.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-01')),0) MON_01
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND  B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = M.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-02')),0) MON_02
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND  B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = M.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-03')),0) MON_03
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND  B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = M.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-04')),0) MON_04
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND  B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = M.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-05')),0) MON_05
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND  B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = M.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-06')),0) MON_06
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND  B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = M.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-07')),0) MON_07
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND  B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = M.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-08')),0) MON_08
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND  B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = M.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-09')),0) MON_09
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND  B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = M.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-10')),0) MON_10
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND  B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = M.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-11')),0) MON_11
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND  B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = M.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-12')),0) MON_12
+             FROM EQ0101M M
+            WHERE M.PLANT_CODE   = #{plantCode}
+              AND M.FACTORY_CODE = #{factoryCode}
+              AND M.REV_NO       = #{revNo}
+              AND M.COMPANY_CD   = #{companyCd}
+              AND EXISTS (
+                       SELECT 1 FROM IN0201M WHERE EQ_NO = M.EQ_NO AND PM_TP = 'T' AND ACT_YN = 'Y' AND DAY_YN = 'N' AND COMPANY_CD = #{companyCd}
+                  )
+         ),
+         EQ_CMPLT
+         AS (
+           SELECT
+                  C.EQ_NO
+                , C.EQ_NM
+                , C.MNG_REC_NO
+                , C.EQ_LOC
+                , C.EQ_LINE
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = C.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND B.CMPLT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-01')),0) MON_01
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = C.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND B.CMPLT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-02')),0) MON_02
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = C.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND B.CMPLT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-03')),0) MON_03
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = C.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND B.CMPLT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-04')),0) MON_04
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = C.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND B.CMPLT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-05')),0) MON_05
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = C.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND B.CMPLT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-06')),0) MON_06
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = C.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND B.CMPLT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-07')),0) MON_07
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = C.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND B.CMPLT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-08')),0) MON_08
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = C.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND B.CMPLT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-09')),0) MON_09
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = C.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND B.CMPLT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-10')),0) MON_10
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = C.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND B.CMPLT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-11')),0) MON_11
+                , ISNULL((SELECT COUNT(A.CHK_NO) FROM IN0201M A INNER JOIN IN0401M B ON B.COMPANY_CD = A.COMPANY_CD AND B.CHK_NO = A.CHK_NO WHERE A.COMPANY_CD = #{companyCd} AND A.EQ_NO = C.EQ_NO AND A.PM_TP = 'T' AND A.ACT_YN = 'Y' AND B.CMPLT_YN = 'Y' AND A.DAY_YN = 'N' AND CONVERT(VARCHAR(7), B.ACTL_YMD, 23) = CONCAT(#{fYearDate}, '-12')),0) MON_12
+             FROM EQ0101M C
+            WHERE C.PLANT_CODE   = #{plantCode}
+              AND C.FACTORY_CODE = #{factoryCode}
+              AND C.REV_NO       = #{revNo}
+              AND C.COMPANY_CD   = #{companyCd}
+              AND EXISTS (
+                       SELECT 1 FROM IN0201M WHERE EQ_NO = C.EQ_NO AND PM_TP = 'T' AND ACT_YN = 'Y' AND DAY_YN = 'N' AND COMPANY_CD = #{companyCd}
+                  )
+		)
+		SELECT
+                A.EQ_DIV
+              , A.EQ_NO
+              , A.EQ_NM
+              , A.MNG_REC_NO
+              , A.EQ_LOC
+              , A.EQ_LINE
+              , A.MON_01
+              , A.MON_02
+              , A.MON_03
+              , A.MON_04
+              , A.MON_05
+              , A.MON_06
+              , A.MON_07
+              , A.MON_08
+              , A.MON_09
+              , A.MON_10
+              , A.MON_11
+              , A.MON_12
+		  FROM (
+                   SELECT '계획량' EQ_DIV
+                        , P.EQ_NO
+                        , P.EQ_NM
+                        , P.MNG_REC_NO
+                        , P.EQ_LOC
+                        , P.EQ_LINE
+                        , P.MON_01
+                        , P.MON_02
+                        , P.MON_03
+                        , P.MON_04
+                        , P.MON_05
+                        , P.MON_06
+                        , P.MON_07
+                        , P.MON_08
+                        , P.MON_09
+                        , P.MON_10
+                        , P.MON_11
+                        , P.MON_12
+                     FROM EQ_PLAN P
+                    UNION ALL
+                   SELECT '실적량' EQ_DIV
+                        , C.EQ_NO
+                        , C.EQ_NM
+                        , C.MNG_REC_NO
+                        , C.EQ_LOC
+                        , C.EQ_LINE
+                        , C.MON_01
+                        , C.MON_02
+                        , C.MON_03
+                        , C.MON_04
+                        , C.MON_05
+                        , C.MON_06
+                        , C.MON_07
+                        , C.MON_08
+                        , C.MON_09
+                        , C.MON_10
+                        , C.MON_11
+                        , C.MON_12
+                     FROM EQ_CMPLT C
+                    UNION ALL
+                   SELECT '실적율(%)' EQ_DIV
+                        , P.EQ_NO
+                        , P.EQ_NM
+                        , P.MNG_REC_NO
+                        , P.EQ_LOC
+                        , P.EQ_LINE
+                        , ROUND(ISNULL((P.MON_01 * 100 / C.MON_01),0),2) MON_01
+                        , ROUND(ISNULL((P.MON_02 * 100 / C.MON_02),0),2) MON_02
+                        , ROUND(ISNULL((P.MON_03 * 100 / C.MON_03),0),2) MON_03
+                        , ROUND(ISNULL((P.MON_04 * 100 / C.MON_04),0),2) MON_04
+                        , ROUND(ISNULL((P.MON_05 * 100 / C.MON_05),0),2) MON_05
+                        , ROUND(ISNULL((P.MON_06 * 100 / C.MON_06),0),2) MON_06
+                        , ROUND(ISNULL((P.MON_07 * 100 / C.MON_07),0),2) MON_07
+                        , ROUND(ISNULL((P.MON_08 * 100 / C.MON_08),0),2) MON_08
+                        , ROUND(ISNULL((P.MON_09 * 100 / C.MON_09),0),2) MON_09
+                        , ROUND(ISNULL((P.MON_10 * 100 / C.MON_10),0),2) MON_10
+                        , ROUND(ISNULL((P.MON_11 * 100 / C.MON_11),0),2) MON_11
+                        , ROUND(ISNULL((P.MON_12 * 100 / C.MON_12),0),2) MON_12
+                     FROM EQ_PLAN P
+                    INNER JOIN EQ_CMPLT C ON C.EQ_NO = P.EQ_NO
+                    UNION ALL
+                   SELECT '계획량' EQ_DIV
+                        , '' EQ_NO
+                        , '' EQ_NM
+                        , '' MNG_REC_NO
+                        , '' EQ_LOC
+                        , '힙계' EQ_LINE
+                        , ISNULL(SUM(P.MON_01),0) MON_01
+                        , ISNULL(SUM(P.MON_02),0) MON_02
+                        , ISNULL(SUM(P.MON_03),0) MON_03
+                        , ISNULL(SUM(P.MON_04),0) MON_04
+                        , ISNULL(SUM(P.MON_05),0) MON_05
+                        , ISNULL(SUM(P.MON_06),0) MON_06
+                        , ISNULL(SUM(P.MON_07),0) MON_07
+                        , ISNULL(SUM(P.MON_08),0) MON_08
+                        , ISNULL(SUM(P.MON_09),0) MON_09
+                        , ISNULL(SUM(P.MON_10),0) MON_10
+                        , ISNULL(SUM(P.MON_11),0) MON_11
+                        , ISNULL(SUM(P.MON_12),0) MON_12
+                     FROM EQ_PLAN P
+                    UNION ALL
+                   SELECT '실적량' EQ_DIV
+                        , '' EQ_NO
+                        , '' EQ_NM
+                        , '' MNG_REC_NO
+                        , '' EQ_LOC
+                        , '힙계' EQ_LINE
+                        , ISNULL(SUM(C.MON_01),0) MON_01
+                        , ISNULL(SUM(C.MON_02),0) MON_02
+                        , ISNULL(SUM(C.MON_03),0) MON_03
+                        , ISNULL(SUM(C.MON_04),0) MON_04
+                        , ISNULL(SUM(C.MON_05),0) MON_05
+                        , ISNULL(SUM(C.MON_06),0) MON_06
+                        , ISNULL(SUM(C.MON_07),0) MON_07
+                        , ISNULL(SUM(C.MON_08),0) MON_08
+                        , ISNULL(SUM(C.MON_09),0) MON_09
+                        , ISNULL(SUM(C.MON_10),0) MON_10
+                        , ISNULL(SUM(C.MON_11),0) MON_11
+                        , ISNULL(SUM(C.MON_12),0) MON_12
+                     FROM EQ_CMPLT C
+                    UNION ALL
+                   SELECT '실적율(%)' EQ_DIV
+                        , '' EQ_NO
+                        , '' EQ_NM
+                        , '' MNG_REC_NO
+                        , '' EQ_LOC
+                        , '힙계' EQ_LINE
+                        , ROUND(ISNULL((SUM(P.MON_01) * 100 / SUM(C.MON_01)),0),2) MON_01
+                        , ROUND(ISNULL((SUM(P.MON_02) * 100 / SUM(C.MON_02)),0),2) MON_02
+                        , ROUND(ISNULL((SUM(P.MON_03) * 100 / SUM(C.MON_03)),0),2) MON_03
+                        , ROUND(ISNULL((SUM(P.MON_04) * 100 / SUM(C.MON_04)),0),2) MON_04
+                        , ROUND(ISNULL((SUM(P.MON_05) * 100 / SUM(C.MON_05)),0),2) MON_05
+                        , ROUND(ISNULL((SUM(P.MON_06) * 100 / SUM(C.MON_06)),0),2) MON_06
+                        , ROUND(ISNULL((SUM(P.MON_07) * 100 / SUM(C.MON_07)),0),2) MON_07
+                        , ROUND(ISNULL((SUM(P.MON_08) * 100 / SUM(C.MON_08)),0),2) MON_08
+                        , ROUND(ISNULL((SUM(P.MON_09) * 100 / SUM(C.MON_09)),0),2) MON_09
+                        , ROUND(ISNULL((SUM(P.MON_10) * 100 / SUM(C.MON_10)),0),2) MON_10
+                        , ROUND(ISNULL((SUM(P.MON_11) * 100 / SUM(C.MON_11)),0),2) MON_11
+                        , ROUND(ISNULL((SUM(P.MON_12) * 100 / SUM(C.MON_12)),0),2) MON_12
+                     FROM EQ_PLAN P
+                    INNER JOIN EQ_CMPLT C ON C.EQ_NO = P.EQ_NO
+			  ) A
+			  ORDER BY CASE WHEN A.EQ_NO IS NULL THEN 1 ELSE 0 END, A.EQ_NO DESC, A.EQ_DIV
+		</select>
+</mapper>

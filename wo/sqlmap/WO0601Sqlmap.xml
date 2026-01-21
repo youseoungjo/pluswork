@@ -1,0 +1,704 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : WO0601
+* Description : 기술문서
+* Author :
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveWO0601List : 메뉴 목록 조회
+* insertWO0601 : 기술문서 목록 추가
+* updateWO0601 : 기술문서 목록 수정
+* deleteWO0601 : 기술문서 목록 삭제
+*************************************************************************************-->
+<mapper namespace="wo0601">
+     <select id="retrieveWO0601Tree" parameterType="map" resultType="map" >
+        <![CDATA[ /* wo0601.retrieveWO0601Tree */ ]]>
+        SELECT
+               REV_NO
+             , EQ_NO
+             , EQ_PRCS
+             , EQ_NM
+          FROM EQ0101M
+         WHERE REV_NO = #{revNo}
+         ORDER BY EQ_NO ASC
+     </select>
+
+     <select id="retrieveWO0601TreeTemp" parameterType="map" resultType="map" >
+         <![CDATA[ /* wo0601.retrieveWO0601TreeTemp */ ]]>
+         SELECT EQ_NO
+              , EQ_PRCS
+              , EQ_NM
+              , REPLACE(SYS_CONNECT_BY_PATH(TREE_PATH, '／'), '／／' ,'／') TREE_PATH
+         FROM (
+               SELECT  0 EQ_NO
+                    ,  999999 EQ_PRCS
+                    , '위치' EQ_NM
+                    ,  '' TREE_PATH
+                UNION ALL
+               SELECT EQ_NO
+                    , EQ_PRCS
+                    , EQ_NM
+                    , EQ_NM TREE_PATH
+                 FROM WO0201M
+              )
+         START WITH EQ_PRCS = 999999
+       CONNECT BY PRIOR EQ_NO = EQ_PRCS
+         ORDER SIBLINGS BY EQ_PRCS, EQ_NO
+     </select>
+
+     <select id="retrieveWO0601List" parameterType="map" resultType="map" >
+         <![CDATA[ /* wo0601.retrieveWO0601List */ ]]>
+         <if test="eqNo != null &amp;&amp; eqNo != ''">
+         WITH EQ_PRCS
+         AS (
+             SELECT CLS_CD
+         	FROM EQ0201M
+            WHERE CLS_CD IN (${eqNo})
+              AND EQ_CLS = 'EQ_PRCS'
+              AND REV_NO = #{revNo}
+            UNION ALL
+           SELECT M.CLS_CD
+             FROM EQ0201M M
+         	JOIN EQ_PRCS N ON M.PRNT_CLS_CD = N.CLS_CD
+         ),
+         EQ_TP
+         AS (
+             SELECT CLS_CD
+         	FROM EQ0201M
+            WHERE CLS_CD IN (${eqNo})
+              AND EQ_CLS = 'EQ_TP'
+              AND REV_NO = #{revNo}
+            UNION ALL
+           SELECT M.CLS_CD
+             FROM EQ0201M M
+         	JOIN EQ_TP N ON M.PRNT_CLS_CD = N.CLS_CD
+         ),
+         EQ_LOC
+         AS (
+             SELECT CLS_CD
+         	FROM EQ0201M
+            WHERE CLS_CD IN (${eqNo})
+              AND EQ_CLS = 'EQ_LOC'
+              AND REV_NO = #{revNo}
+            UNION ALL
+           SELECT M.CLS_CD
+             FROM EQ0201M M
+         	JOIN EQ_LOC N ON M.PRNT_CLS_CD = N.CLS_CD
+         )
+         </if>
+         SELECT
+                X.WO_NO
+              , X.WO_NM
+              , X.WO_STS
+              , X.WO_DIV
+              , X.WO_TP
+              , X.WORK_DELAY_CMMNT
+              , X.BROKEN_START_YMD
+              , X.BROKEN_START_TIME
+              , X.BROKEN_END_YMD
+              , X.BROKEN_END_TIME
+              , dbo.FN_NAME(X.PLAN_ORG_CD, 'DEPT') PLAN_ORG_CD_DESC
+              , X.PLAN_ORG_CD
+              , dbo.FN_NAME(X.PLAN_USER_ID, 'USER')  PLAN_USER_DESC
+              , X.PLAN_USER_ID
+              , X.PLAN_START_YMD
+              , X.PLAN_START_TIME
+              , X.PLAN_END_YMD
+              , X.PLAN_END_TIME
+              , X.WORK_USER_ID
+              , dbo.FN_NAME(X.WORK_USER_ID, 'USER') AS WORK_USER_NM
+              , X.ORG_CD
+              , dbo.FN_NAME(X.ORG_CD, 'DEPT') ORG_DESC
+              , X.START_YMD
+              , X.START_TIME
+              , X.END_YMD
+              , X.END_TIME
+              , dbo.FN_NAME(Z.REQ_ORG_CD, 'DEPT') REQ_ORG_CD_DESC
+              , Z.REQ_YMD
+              , dbo.FN_NAME(Z.REQ_USER_ID, 'USER')    REQ_USER_ID
+              , X.REQ_NO
+              , X.EQ_NO
+              , Y.EQ_NM
+              , Y.EQ_STS
+              , Y.EQ_TP
+              , dbo.FN_NAME(Y.EQ_TP, 'EQ_TP') AS EQ_TP_NM
+              , X.WO_GRD
+              , X.PRIOR_CD
+              , X.WORK_CNDT_CD
+              , X.WORK_CNDT_HOUR
+              , X.WO_KIND
+              , X.PRNT_WO_NO
+              , X.PM_NO
+              , X.FILE_ATCH_ID
+              , X.PLAN_LABOR_COST
+              , X.PLAN_ETC_COST
+              , X.CMMNT
+              , X.WORK_DESC
+           FROM WO0201M X
+          INNER JOIN EQ0101M Y ON (Y.EQ_NO = X.EQ_NO)
+           LEFT OUTER JOIN  WO0101M Z ON (Z.REQ_NO = X.REQ_NO)
+          WHERE Y.REV_NO = #{revNo}
+            AND X.WO_DIV = 'WO0601'
+         <if test="eqNo != null &amp;&amp; eqNo != ''">
+           <if test="eqClsDiv == 'EQ_TP'">
+            AND EQ_TP IN (
+                SELECT CLS_CD FROM EQ_TP
+                )
+           </if>
+           <if test="eqClsDiv == 'EQ_LOC'">
+            AND EQ_LOC IN (
+                  SELECT CLS_CD FROM EQ_LOC
+                )
+           </if>
+           <if test="eqClsDiv == 'EQ_PRCS'">
+            AND EQ_PRCS IN (
+                  SELECT CLS_CD FROM EQ_PRCS
+                )
+           </if>
+           <if test="eqClsDiv == 'EQ_MY'">
+            AND EQ_PRCS IN (
+                   SELECT EQ_PRCS
+                    FROM EQ0101M
+                   WHERE REV_NO = #{revNo}
+                     AND EQ_NO IN (${eqNo})
+                )
+            AND Y.EQ_NO IN (SELECT EQ_NO FROM EQ0101P WHERE USE_YN = 'Y' AND USER_ID = #{userId})
+           </if>
+         </if>
+         <if test="fWoNo != null &amp;&amp; fWoNo != ''">
+            AND X.WO_NO LIKE #{fWoNo} + '%'
+         </if>
+         <if test="fWoNm != null &amp;&amp; fWoNm != ''">
+            AND UPPER(X.WO_NM) LIKE '%' + UPPER(#{fWoNm}) + '%'
+         </if>
+         <if test="feqNo != null &amp;&amp; feqNo != ''">
+            AND X.EQ_NO = #{feqNo}
+         </if>
+         <if test="fWoSts != null &amp;&amp; fWoSts != ''">
+            AND X.WO_STS IN (${fWoSts})
+         </if>
+         <if test="pwoNo != null &amp;&amp; pwoNo != ''">
+            AND X.WO_NO IN (${pwoNo})
+         </if>
+         <if test="fWoTp != null &amp;&amp; fWoTp != ''">
+            AND X.WO_TP IN (${fWoTp})
+         </if>
+         <if test="fWoDiv != null &amp;&amp; fWoDiv != ''">
+            AND X.WO_DIV IN (${fWoDiv})
+         </if>
+         <if test="fOrgCd != null &amp;&amp; fOrgCd != ''">
+            AND X.ORG_CD = #{fOrgCd}
+         </if>
+         <if test="fStartYmd != null &amp;&amp; fStartYmd != ''">
+           <if test="fEndYmd != null &amp;&amp; fEndYmd != ''">
+            AND X.START_YMD BETWEEN #{fStartYmd} AND #{fEndYmd}
+          </if>
+         </if>
+          ORDER BY WO_NO DESC
+    </select>
+
+    <select id="retrieveWoRJobList" parameterType="map" resultType="map" >
+        <![CDATA[ /* wo0601.retrieveWoJobList */ ]]>
+        SELECT
+               X.WO_JOB_NO
+             , X.SEQ_NO
+             , X.WORK_DESC
+             , X.WO_NO
+             , X.CMMNT
+          FROM WO0302J X
+         WHERE X.WO_NO = #{woNo}
+         ORDER BY X.SEQ_NO ASC
+    </select>
+
+    <select id="retrieveWoRCraftList" parameterType="map" resultType="map" >
+        <![CDATA[ /* wo0601.retrieveWoRCraftList */ ]]>
+        SELECT
+               X.WO_OCCPT_NO
+             , X.SEQ_NO
+             , X.OCCPT_CD
+             , X.WORK_USER_ID
+             , Y.TRADE_NM  WORK_USER_NM
+             , X.WORK_HOUR
+             , X.WO_NO
+             , X.USER_COST
+             , X.IN_OUT_DIV
+          FROM WO0302C X, CO0601M Y
+         WHERE X.WORK_USER_ID = Y.TRADE_CD
+           AND X.WO_NO = #{woNo}
+         ORDER BY X.SEQ_NO ASC
+    </select>
+
+    <select id="retrieveWoRMaterialList" parameterType="map" resultType="map" >
+        <![CDATA[ /* wo0601.retrieveWoRMaterialList */ ]]>
+        SELECT
+               X.WO_NO
+             , X.PART_CD
+             , Y.PART_NM
+             , X.USE_QTY
+             , Y.UNIT_CD
+             , Y.UNIT_COST
+             , (X.USE_QTY * Y.UNIT_COST) AS AMOUNT
+             , X.DISPEND_QTY
+             , X.RETURN_QTY
+             , X.INTERNAL_ORDER
+          FROM WO0301P X, PT0101M Y
+         WHERE X.PART_CD = Y.PART_CD
+           AND X.WO_NO = #{woNo}
+         ORDER BY X.PART_CD ASC
+    </select>
+
+    <select id="retrieveWoSymList" parameterType="map" resultType="map" >
+        <![CDATA[ /* wo0601.retrieveWoSymList */ ]]>
+        SELECT
+                X.WO_SYMPTM_NO
+              , X.SYMPTM_CD
+              , dbo.FN_NAME(X.SYMPTM_CD, 'SYMPTM_CD') SYMPTM_DESC
+              , X.CMMNT
+              , X.WO_NO
+              , dbo.FN_NAME(X.WO_DIV, 'WO_DIV') WO_DIV_NM
+          FROM WO0303S X
+         WHERE X.WO_NO = #{woNo}
+         ORDER BY X.WO_SYMPTM_NO DESC
+    </select>
+
+    <select id="retrieveWoResultList" parameterType="map" resultType="map" >
+        <![CDATA[ /* wo0601.retrieveWoResultList */ ]]>
+        SELECT
+               X.WO_MNG_NO
+             , X.SYMPTM_CD
+             , X.REPR_CD
+             , X.WORK_REGION_CD
+             , X.FAIL_CD
+             , dbo.FN_NAME(X.SYMPTM_CD, 'SYMPTM_CD') SYMPTM_DESC
+             , dbo.FN_NAME(X.REPR_CD, 'REPR_CD') REPR_DESC
+             , dbo.FN_NAME(X.FAIL_CD, 'FAIL_CD') FAIL_DESC
+             , X.CMMNT
+             , X.WO_NO
+          FROM WO0303R X
+         WHERE X.WO_NO = #{woNo}
+         ORDER BY X.WO_MNG_NO DESC
+    </select>
+
+    <insert id="insertWO0601" parameterType="map" >
+        <![CDATA[ /* wo0601.insertWO0601 */ ]]>
+        INSERT INTO WO0201M (
+               WO_NO
+             , WO_NM
+             , WO_STS
+             , EQ_NO
+             , EQ_GRD
+             , WO_TP
+             , WO_GRD
+             , WO_DIV
+             , WORK_CNDT_CD
+             , WORK_CNDT_HOUR
+             , WO_KIND
+             , PRIOR_CD
+             , PLAN_USER_ID
+             , PLAN_ORG_CD
+             , WORK_USER_ID
+             , ORG_CD
+             , START_YMD
+             , START_TIME
+             , END_YMD
+             , END_TIME
+             , CMMNT
+             , WORK_DESC
+             , WORK_DELAY_CMMNT
+             , BROKEN_START_YMD
+             , BROKEN_START_TIME
+             , BROKEN_END_YMD
+             , BROKEN_END_TIME
+             , DEVICE_TP
+             , FST_REG_USER_ID
+             , FST_REG_DT
+             , FNL_EDIT_USER_ID
+             , FNL_EDIT_DT
+             , FILE_ATCH_ID
+        )
+        VALUES (
+               #{woNo}
+             , #{woNm}
+             , 'CA'
+             , #{eqNo}
+             , (SELECT EQ_GRD FROM EQ0101M WHERE EQ_NO = #{eqNo})
+             , #{woTp}
+             , #{woGrd}
+             , #{woDiv}
+             , #{workCndtCd}
+             , #{workCndtHour}
+             , #{woKind}
+             , #{priorCd}
+             , #{planUserId}
+             , #{planOrgCd}
+             , #{workUserId}
+             , #{orgCd}
+             , #{startYmd}
+             , #{startTime}
+             , #{endYmd}
+             , #{endTime}
+             , #{cmmnt}
+             , #{workDesc}
+             , #{workDelayCmmnt}
+             , #{brokenStartYmd}
+             , #{brokenStartTime}
+             , #{brokenEndYmd}
+             , #{brokenEndTime}
+             , 'PC'
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+             , GETDATE()
+             <if test="fileAtchId == ''">
+             , null
+             </if>
+             <if test="fileAtchId != ''">
+             , #{fileAtchId}
+             </if>
+        )
+    </insert>
+
+    <!-- 해당 설비ID정보 수정 -->
+    <update id="updateWO0601" parameterType="map" >
+        <![CDATA[ /* wo0601.updateWO0601 */ ]]>
+        UPDATE WO0201M
+           SET
+             <if test="fileAtchId == ''">
+               FILE_ATCH_ID     = null
+             </if>
+             <if test="fileAtchId != ''">
+               FILE_ATCH_ID     = #{fileAtchId}
+             </if>
+             , WO_NM                  = #{woNm}
+             , EQ_NO                  = #{eqNo}
+             , WO_TP                  = #{woTp}
+             , WO_GRD                 = #{woGrd}
+             , WORK_CNDT_CD           = #{workCndtCd}
+             , WORK_CNDT_HOUR         = #{workCndtHour}
+             , WO_KIND                = #{woKind}
+             , PRIOR_CD               = #{priorCd}
+             , WORK_USER_ID           = #{workUserId}
+             , ORG_CD                 = #{orgCd}
+             , START_YMD              = #{startYmd}
+             , START_TIME             = #{startTime}
+             , END_YMD                = #{endYmd}
+             , END_TIME               = #{endTime}
+             , CMMNT                  = #{cmmnt}
+             , WORK_DESC              = #{workDesc}
+             , WORK_DELAY_CMMNT       = #{workDelayCmmnt}
+             , BROKEN_START_YMD       = #{brokenStartYmd}
+             , BROKEN_START_TIME      = #{brokenStartTime}
+             , BROKEN_END_YMD         = #{brokenEndYmd}
+             , BROKEN_END_TIME        = #{brokenEndTime}
+             , FNL_EDIT_DT            = GETDATE()
+             , FNL_EDIT_USER_ID       = #{fnlEditUserId}
+         WHERE WO_NO = #{woNo}
+    </update>
+
+    <!-- 해당 설비ID 삭제 -->
+    <delete id="deleteWO0601" parameterType="map" >
+        <![CDATA[ /* wo0601.deleteWO0601 */ ]]>
+        DELETE
+          FROM WO0201M
+         WHERE WO_NO = #{woNo}
+    </delete>
+
+    <!-- 작업 정보 저장  -->
+    <insert id="insertJob" parameterType="map" >
+        <![CDATA[ /* wo0601.insertJob */ ]]>
+        INSERT INTO WO0302J (
+               WO_JOB_NO
+             , SEQ_NO
+             , WORK_DESC
+             , WO_NO
+             , CMMNT
+             , FST_REG_USER_ID
+             , FST_REG_DT
+        )
+        VALUES (
+               NEXT VALUE FOR DBO.SQWO_JOB_NO_01
+             , #{seqNo}
+             , #{workDesc}
+             , #{woNo}
+             , #{cmmnt}
+             , #{fstRegUserId}
+             , GETDATE()
+        )
+    </insert>
+
+    <!-- 해당 작업ID 수정 -->
+    <update id="updateJob" parameterType="map" >
+        <![CDATA[ /* wo0601.updateJob */ ]]>
+        UPDATE WO0302J
+           SET SEQ_NO            = #{seqNo}
+             , WORK_DESC         = #{workDesc}
+             , CMMNT             = #{cmmnt}
+             , FNL_EDIT_DT       = GETDATE()
+             , FNL_EDIT_USER_ID  = #{fnlEditUserId}
+         WHERE WO_JOB_NO = #{woJobNo}
+    </update>
+
+    <!-- 해당 작업ID 삭제 -->
+    <delete id="deleteJob" parameterType="map" >
+        <![CDATA[ /* wo0601.deleteJob */ ]]>
+        DELETE
+          FROM WO0302J
+         WHERE WO_JOB_NO   = #{woJobNo}
+    </delete>
+
+    <!-- 인건비 정보 저장  -->
+    <insert id="insertCraft" parameterType="map" >
+        <![CDATA[ /* wo0601.insertCraft */ ]]>
+        INSERT INTO WO0302C (
+               WO_OCCPT_NO
+             , SEQ_NO
+             , OCCPT_CD
+             , WORK_USER_ID
+             , WORK_HOUR
+             , WO_NO
+             , USER_COST
+             , IN_OUT_DIV
+             , FST_REG_USER_ID
+             , FST_REG_DT
+        )
+        VALUES (
+               NEXT VALUE FOR DBO.SQWO_OCCPT_NO_01
+             , #{seqNo}
+             , #{occptCd}
+             , #{workUserId}
+             , #{workHour}
+             , #{woNo}
+             , #{userCost}
+             , #{inOutDiv}
+             , #{fstRegUserId}
+             , GETDATE()
+        )
+    </insert>
+
+    <!-- 해당 인건비ID 수정 -->
+    <update id="updateCraft" parameterType="map" >
+        <![CDATA[ /* wo0601.updateCraft */ ]]>
+        UPDATE WO0302C
+           SET
+               SEQ_NO           = #{seqNo}
+             , OCCPT_CD         = #{occptCd}
+             , WORK_USER_ID     = #{workUserId}
+             , WORK_HOUR        = #{workHour}
+             , USER_COST        = #{userCost}
+             , IN_OUT_DIV       = #{inOutDiv}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE WO_OCCPT_NO      = #{woOccptNo}
+    </update>
+
+    <!-- 해당 인건비ID 삭제 -->
+    <delete id="deleteCraft" parameterType="map" >
+        <![CDATA[ /* wo0601.deleteCraft */ ]]>
+        DELETE
+          FROM WO0302C
+         WHERE WO_OCCPT_NO   = #{woOccptNo}
+    </delete>
+
+    <!-- 현상 정보 저장  -->
+    <insert id="insertSym" parameterType="map" >
+        <![CDATA[ /* wo0601.insertSym */ ]]>
+        INSERT INTO WO0303S (
+               WO_SYMPTM_NO
+             , SYMPTM_CD
+             , WO_NO
+             , CMMNT
+             , WO_DIV
+             , FST_REG_USER_ID
+             , FST_REG_DT
+             , FNL_EDIT_USER_ID
+             , FNL_EDIT_DT
+        )
+        VALUES (
+               NEXT VALUE FOR DBO.SQWO_SYMPTM_NO_01
+             , #{symptmCd}
+             , #{woNo}
+             , #{cmmnt}
+             , #{woDiv}
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+             , GETDATE()
+        )
+    </insert>
+
+    <!-- 해당 작업ID 수정 -->
+    <update id="updateSym" parameterType="map" >
+        <![CDATA[ /* wo0601.updateSym */ ]]>
+        UPDATE WO0303S
+           SET
+               SYMPTM_CD         = #{symptmCd}
+             , CMMNT             = #{cmmnt}
+             , WO_DIV             = #{woDiv}
+             , FNL_EDIT_DT       = GETDATE()
+             , FNL_EDIT_USER_ID  = #{fnlEditUserId}
+         WHERE WO_SYMPTM_NO      = #{woSymptmNo}
+    </update>
+
+    <!-- 해당 작업ID 삭제 -->
+    <delete id="deleteSym" parameterType="map" >
+        <![CDATA[ /* wo0601.deleteSym */ ]]>
+        DELETE
+          FROM WO0303S
+         WHERE WO_SYMPTM_NO = #{woSymptmNo}
+    </delete>
+
+    <!-- 조치 정보 저장  -->
+    <insert id="insertResult" parameterType="map" >
+        <![CDATA[ /* wo0601.insertResult */ ]]>
+        INSERT INTO WO0303R (
+               WO_MNG_NO
+             , SYMPTM_CD
+             , REPR_CD
+             , WORK_REGION_CD
+             , FAIL_CD
+             , WO_NO
+             , CMMNT
+             , FST_REG_USER_ID
+             , FST_REG_DT
+             , FNL_EDIT_USER_ID
+             , FNL_EDIT_DT
+        )
+        VALUES (
+               NEXT VALUE FOR DBO.SQWO_MNG_NO_01
+             , #{symptmCd}
+             , #{reprCd}
+             , #{workRegionCd}
+             , #{failCd}
+             , #{woNo}
+             , #{cmmnt}
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+             , GETDATE()
+        )
+    </insert>
+
+    <!-- 해당 작업ID 수정 -->
+    <update id="updateResult" parameterType="map" >
+        <![CDATA[ /* wo0601.updateResult */ ]]>
+        UPDATE WO0303R
+           SET
+               REPR_CD           = #{reprCd}
+             , WORK_REGION_CD    = #{workRegionCd}
+             , FAIL_CD           = #{failCd}
+             , CMMNT             = #{cmmnt}
+             , FNL_EDIT_DT       = GETDATE()
+             , FNL_EDIT_USER_ID  = #{fnlEditUserId}
+         WHERE WO_MNG_NO         = #{woMngNo}
+    </update>
+
+    <!-- 해당 작업ID 삭제 -->
+    <delete id="deleteResult" parameterType="map" >
+        <![CDATA[ /* wo0601.deleteSym */ ]]>
+        DELETE
+          FROM WO0303R
+         WHERE WO_MNG_NO   = #{woMngNo}
+    </delete>
+
+
+    <select id="retrieveEqAtchId" parameterType="map" resultType="map">
+         <![CDATA[ /* wo0601.retrieveEqAtchId */ ]]>
+         SELECT CONVERT(VARCHAR, FILE_ATCH_ID) AS FILE_ATCH_ID
+           FROM EQ0101M
+          WHERE REV_NO = #{revNo}
+            AND EQ_NO  = #{eqNo}
+    </select>
+
+    <!-- 해당 설계 Total금액 수정 -->
+    <update id="updateWO0601Craft" parameterType="map" >
+        <![CDATA[ /* wo0601.updateWO0601Craft */ ]]>
+        UPDATE WO0201M
+           SET PLAN_LABOR_COST  = (SELECT SUM(A.USER_COST)
+                                       FROM WO0302C A
+                                      WHERE A.WO_NO = WO_NO)
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE WO_NO = #{woNo}
+    </update>
+
+    <!-- 작업결과 설계자재비 Total금액 수정 -->
+    <update id="updateWO0601Pt" parameterType="map" >
+        <![CDATA[ /* wo0601.updateWO0601Pt */ ]]>
+        UPDATE WO0201M
+           SET
+               PLAN_PT_COST     = (SELECT SUM((A.USE_QTY * A.UNIT_COST))
+                                       FROM WO0201P A
+                                      WHERE A.WO_NO = WO_NO)
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE WO_NO = #{woNo}
+    </update>
+
+     <!-- 작업 취소 -->
+    <update id="updateWoCancelWO0601" parameterType="map" >
+        <![CDATA[ /* wo0601.updateWoCancelWO0601 */ ]]>
+        UPDATE WO0201M
+           SET
+               WO_STS           = #{woSts}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE WO_NO            = #{woNo}
+    </update>
+
+    <select id="retrieveWO0601Detail" parameterType="map" resultType="map" >
+        <![CDATA[ /* wo0601.retrieveWO0601Detail */ ]]>
+        SELECT
+               X.WO_NO
+             , X.WO_NM
+             , X.WO_STS
+             , dbo.FN_NAME(X.WO_STS, 'WO_STS') WO_STS_NM
+             , dbo.FN_NAME(Z.REQ_ORG_CD, 'DEPT') REQ_ORG_CD_DESC
+             , Z.REQ_YMD
+             , dbo.FN_NAME(X.PLAN_ORG_CD, 'DEPT') PLAN_ORG_CD_DESC
+             , X.PLAN_ORG_CD
+             , dbo.FN_NAME(Z.REQ_USER_ID, 'USER')    REQ_USER_ID
+             , dbo.FN_NAME(X.PLAN_USER_ID, 'USER')  PLAN_USER_DESC
+             , X.PLAN_USER_ID
+             , Y.ITEM_NO
+             , Y.EQ_NM
+             , X.PLAN_START_YMD
+             , X.PLAN_END_YMD
+             , X.START_YMD
+             , X.END_YMD,'YYYYMMDD'
+             , X.REQ_NO
+             , X.EQ_NO
+             , X.WO_TP
+             , dbo.FN_NAME(X.WO_TP, 'WO_TP') WO_TP_NM
+             , X.WO_GRD
+             , dbo.FN_NAME(X.WO_GRD, 'WO_GRD') WO_GRD_NM
+             , X.PRIOR_CD
+             , dbo.FN_NAME(X.PRIOR_CD, 'PRIOR_CD') PRIOR_NM
+             , X.WORK_CNDT_CD
+             , dbo.FN_NAME(X.WORK_CNDT_CD, 'WORK_CNDT_CD') WORK_CNDT_NM
+             , X.WORK_CNDT_HOUR
+             , X.WO_KIND
+             , dbo.FN_NAME(X.WO_KIND, 'WO_KIND') WO_KIND_NM
+             , X.PRNT_WO_NO
+             , X.ORG_CD
+             , X.FILE_ATCH_ID
+             , X.PLAN_LABOR_COST
+             , X.PLAN_ETC_COST
+             , dbo.FN_NAME(X.ORG_CD, 'DEPT') ORG_DESC
+             , X.WORK_USER_ID
+             , dbo.FN_NAME(X.WORK_USER_ID, 'USER')WORK_USER_NM
+             , X.PLAN_START_TIME
+             , X.PLAN_END_TIME
+             , X.START_TIME
+             , X.END_TIME
+             , X.CMMNT
+          FROM WO0201M X, EQ0101M Y, WO0101M Z
+         WHERE Y.REV_NO = #{revNo}
+           AND X.EQ_NO = Y.EQ_NO
+           AND X.REQ_NO = Z.REQ_NO(+)
+           AND X.WO_NO = #{woNo}
+    </select>
+</mapper>

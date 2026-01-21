@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : 작업요청서 추리 분석
+* Description : 작업요청서 추리 분석 차트
+* Author : jit13
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveST0201     : 작업요청서 추리 분석 조회
+*************************************************************************************-->
+<mapper namespace="st0201">
+
+    <select id="retrieveST0201Chart" parameterType="map" resultType="map" >
+        <![CDATA[ /* st0201.retrieveST0201Chart */ ]]>
+        <if test='fcon == "A"'>
+        SELECT
+               '"' + dbo.FN_NAME(REQ_ORG_CD,'DEPT') + '"'    CHART_NM
+             , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-11,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT1
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-10,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT2
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-9,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT3
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-8,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT4
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-7,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT5
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-6,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT6
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-5,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT7
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-4,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT8
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-3,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT9
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-2,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT10
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-1,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT11
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,0,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT12
+          FROM WO0101M x
+         WHERE 1=1
+           AND WO_REQ_STS='AZ'
+          <if test="fwoTp != null &amp;&amp; fwoTp != ''">
+           AND X.WO_TP = #{fwoTp}
+          </if>
+           AND SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6)<![CDATA[ >= ]]> SUBSTRING(REPLACE(DATEADD(MM,-11,CONVERT(DATE,#{fEndDate})),'-',''),0,7)
+           AND SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6)<![CDATA[ <= ]]> SUBSTRING(REPLACE(DATEADD(MM,0,CONVERT(DATE,#{fEndDate})),'-',''),0,7)
+         GROUP BY REQ_ORG_CD
+        </if>
+        <if test='fcon == "B"'>
+        SELECT
+               '"' + dbo.FN_NAME(PLAN_ORG_CD,'DEPT') + '"'    CHART_NM
+             , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-11,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT1
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-10,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT2
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-9,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT3
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-8,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT4
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-7,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT5
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-6,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT6
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-5,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT7
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-4,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT8
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-3,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT9
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-2,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT10
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-1,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT11
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,0,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT12
+          FROM WO0101M x
+         WHERE 1=1
+           AND WO_REQ_STS='AZ'
+          <if test="fwoTp != null &amp;&amp; fwoTp != ''">
+           AND X.WO_TP = #{fwoTp}
+          </if>
+           AND SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6)<![CDATA[ >= ]]> SUBSTRING(REPLACE(DATEADD(MM,-11,CONVERT(DATE,#{fEndDate})),'-',''),0,7)
+           AND SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6)<![CDATA[ <= ]]> SUBSTRING(REPLACE(DATEADD(MM,0,CONVERT(DATE,#{fEndDate})),'-',''),0,7)
+         GROUP BY PLAN_ORG_CD
+        </if>
+        <if test='fcon == "C"'>
+        SELECT
+               '"' + dbo.FN_NAME(Y.EQ_NO,'EQUIP') + '"'    CHART_NM
+             , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-11,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT1
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-10,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT2
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-9,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT3
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-8,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT4
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-7,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT5
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-6,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT6
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-5,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT7
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-4,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT8
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-3,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT9
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-2,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT10
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-1,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT11
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,0,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT12
+          FROM WO0101M X, EQ0101M Y
+         WHERE 1=1
+           AND X.EQ_NO = Y.EQ_NO
+           AND WO_REQ_STS='AZ'
+           AND Y.REV_NO = #{revNo}
+          <if test="fwoTp != null &amp;&amp; fwoTp != ''">
+           AND X.WO_TP = #{fwoTp}
+          </if>
+          <if test="finputNo != null &amp;&amp; finputNo != ''">
+           AND X.EQ_NO = #{finputNo}
+          </if>
+           AND SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6)<![CDATA[ >= ]]> SUBSTRING(REPLACE(DATEADD(MM,-11,CONVERT(DATE,#{fEndDate})),'-',''),0,7)
+           AND SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6)<![CDATA[ <= ]]> SUBSTRING(REPLACE(DATEADD(MM,0,CONVERT(DATE,#{fEndDate})),'-',''),0,7)
+         GROUP BY Y.EQ_NO
+        </if>
+    </select>
+
+    <select id="retrieveST0201List" parameterType="map" resultType="map" >
+        <![CDATA[ /* st0201.retrieveST0201List */ ]]>
+        <if test='fcon == "A"'>
+        SELECT
+               REQ_ORG_CD CHART_CD
+             , dbo.FN_NAME(REQ_ORG_CD,'DEPT') CHART_NM
+             , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-11,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT1
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-10,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT2
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-9,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT3
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-8,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT4
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-7,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT5
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-6,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT6
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-5,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT7
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-4,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT8
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-3,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT9
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-2,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT10
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-1,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT11
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,0,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT12
+             , SUM(1) TOTAL_COUNT
+             , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-11,CONVERT(DATE,#{fEndDate}))),0,8) DATE1
+             , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-10,CONVERT(DATE,#{fEndDate}))),0,8) DATE2
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-9,CONVERT(DATE,#{fEndDate}))),0,8) DATE3
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-8,CONVERT(DATE,#{fEndDate}))),0,8) DATE4
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-7,CONVERT(DATE,#{fEndDate}))),0,8) DATE5
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-6,CONVERT(DATE,#{fEndDate}))),0,8) DATE6
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-5,CONVERT(DATE,#{fEndDate}))),0,8) DATE7
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-4,CONVERT(DATE,#{fEndDate}))),0,8) DATE8
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-3,CONVERT(DATE,#{fEndDate}))),0,8) DATE9
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-2,CONVERT(DATE,#{fEndDate}))),0,8) DATE10
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-1,CONVERT(DATE,#{fEndDate}))),0,8) DATE11
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,0,CONVERT(DATE,#{fEndDate}))),0,8) DATE12
+          FROM WO0101M x
+         WHERE 1=1
+           AND WO_REQ_STS='AZ'
+          <if test="fwoTp != null &amp;&amp; fwoTp != ''">
+           AND X.WO_TP = #{fwoTp}
+          </if>
+           AND SUBSTRING(REPLACE(REQ_YMD, '-', ''), 1, 6)<![CDATA[ >= ]]> SUBSTRING(REPLACE(DATEADD(MM,-11,CONVERT(DATE,#{fEndDate})),'-',''),0,7)
+           AND SUBSTRING(REPLACE(REQ_YMD, '-', ''), 1, 6)<![CDATA[ <= ]]> SUBSTRING(REPLACE(DATEADD(MM,0,CONVERT(DATE,#{fEndDate})),'-',''),0,7)
+         GROUP BY REQ_ORG_CD
+        </if>
+        <if test='fcon == "B"'>
+        SELECT
+               PLAN_ORG_CD CHART_CD
+             , dbo.FN_NAME(PLAN_ORG_CD,'DEPT') CHART_NM
+             , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-11,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT1
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-10,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT2
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-9,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT3
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-8,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT4
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-7,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT5
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-6,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT6
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-5,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT7
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-4,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT8
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-3,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT9
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-2,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT10
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-1,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT11
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,0,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT12
+             , SUM(1) TOTAL_COUNT
+             , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-11,CONVERT(DATE,#{fEndDate}))),0,8) DATE1
+             , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-10,CONVERT(DATE,#{fEndDate}))),0,8) DATE2
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-9,CONVERT(DATE,#{fEndDate}))),0,8) DATE3
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-8,CONVERT(DATE,#{fEndDate}))),0,8) DATE4
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-7,CONVERT(DATE,#{fEndDate}))),0,8) DATE5
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-6,CONVERT(DATE,#{fEndDate}))),0,8) DATE6
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-5,CONVERT(DATE,#{fEndDate}))),0,8) DATE7
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-4,CONVERT(DATE,#{fEndDate}))),0,8) DATE8
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-3,CONVERT(DATE,#{fEndDate}))),0,8) DATE9
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-2,CONVERT(DATE,#{fEndDate}))),0,8) DATE10
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-1,CONVERT(DATE,#{fEndDate}))),0,8) DATE11
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,0,CONVERT(DATE,#{fEndDate}))),0,8) DATE12
+          FROM WO0101M x
+         WHERE 1=1
+           AND WO_REQ_STS='AZ'
+          <if test="fwoTp != null &amp;&amp; fwoTp != ''">
+           AND X.WO_TP = #{fwoTp}
+          </if>
+           AND SUBSTRING(REPLACE(REQ_YMD, '-', ''), 1, 6)<![CDATA[ >= ]]> SUBSTRING(REPLACE(DATEADD(MM,-11,CONVERT(DATE,#{fEndDate})),'-',''),0,7)
+           AND SUBSTRING(REPLACE(REQ_YMD, '-', ''), 1, 6)<![CDATA[ <= ]]> SUBSTRING(REPLACE(DATEADD(MM,0,CONVERT(DATE,#{fEndDate})),'-',''),0,7)
+         GROUP BY PLAN_ORG_CD
+        </if>
+        <if test='fcon == "C"'>
+        SELECT
+               (SELECT EQ_NO
+                  FROM EQ0101M
+                 WHERE EQ_NO = X.EQ_NO
+                   AND REV_NO = #{revNo}) CHART_CD
+             , dbo.FN_NAME(X.EQ_NO,'EQUIP') CHART_NM
+             , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-11,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT1
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-10,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT2
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-9,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT3
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-8,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT4
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-7,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT5
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-6,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT6
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-5,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT7
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-4,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT8
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-3,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT9
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-2,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT10
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,-1,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT11
+			 , SUM(CASE SUBSTRING(REPLACE(REPLACE(REQ_YMD, '-', ''), '-', ''), 1, 6) WHEN SUBSTRING(REPLACE(DATEADD(MM,0,CONVERT(DATE,#{fEndDate})),'-',''),0,7) THEN 1 ELSE 0 END) COUNT12
+             , SUM(1) TOTAL_COUNT
+             , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-11,CONVERT(DATE,#{fEndDate}))),0,8) DATE1
+             , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-10,CONVERT(DATE,#{fEndDate}))),0,8) DATE2
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-9,CONVERT(DATE,#{fEndDate}))),0,8) DATE3
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-8,CONVERT(DATE,#{fEndDate}))),0,8) DATE4
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-7,CONVERT(DATE,#{fEndDate}))),0,8) DATE5
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-6,CONVERT(DATE,#{fEndDate}))),0,8) DATE6
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-5,CONVERT(DATE,#{fEndDate}))),0,8) DATE7
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-4,CONVERT(DATE,#{fEndDate}))),0,8) DATE8
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-3,CONVERT(DATE,#{fEndDate}))),0,8) DATE9
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-2,CONVERT(DATE,#{fEndDate}))),0,8) DATE10
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,-1,CONVERT(DATE,#{fEndDate}))),0,8) DATE11
+			 , SUBSTRING(CONVERT(VARCHAR,DATEADD(MM,0,CONVERT(DATE,#{fEndDate}))),0,8) DATE12
+          FROM WO0101M X, EQ0101M Y
+         WHERE X.EQ_NO=Y.EQ_NO
+           AND Y.REV_NO = #{revNo}
+           AND WO_REQ_STS='AZ'
+          <if test="fwoTp != null &amp;&amp; fwoTp != ''">
+           AND X.WO_TP = #{fwoTp}
+          </if>
+          <if test="finputNo != null &amp;&amp; finputNo != ''">
+           AND X.EQ_NO = #{finputNo}
+          </if>
+           AND SUBSTRING(REPLACE(REQ_YMD, '-', ''), 1, 6)<![CDATA[ >= ]]> SUBSTRING(REPLACE(DATEADD(MM,-11,CONVERT(DATE,#{fEndDate})),'-',''),0,7)
+           AND SUBSTRING(REPLACE(REQ_YMD, '-', ''), 1, 6)<![CDATA[ <= ]]> SUBSTRING(REPLACE(DATEADD(MM,0,CONVERT(DATE,#{fEndDate})),'-',''),0,7)
+         GROUP BY X.EQ_NO
+        </if>
+    </select>
+
+    <select id="retrieveST0201SubList" parameterType="map" resultType="map" >
+        <![CDATA[ /* st0201.retrieveST0201SubList */ ]]>
+        <if test='fcon == "A"'>
+        SELECT
+               (SELECT EQ_NO
+                  FROM EQ0101M
+                 WHERE EQ_NO = X.EQ_NO
+                   AND REV_NO = #{revNo}) EQ_NO
+             , dbo.FN_NAME(X.EQ_NO,'EQUIP') EQ_NM
+             , X.REQ_NO REQ_NO
+             , X.REQ_NM REQ_NM
+             , dbo.FN_NAME(X.WO_TP,'WO_TP') WO_TP
+             , dbo.FN_NAME(WO_REQ_STS,'WO_REQ_STS') WO_REQ_STS
+             , REPLACE(REQ_YMD, '-', '')
+             , dbo.FN_NAME(X.PLAN_ORG_CD,'DEPT') PLAN_ORG_NM
+             , dbo.FN_NAME(REQ_USER_ID,'USER') REQ_USER_NM
+             , dbo.FN_NAME(Y.PLAN_USER_ID,'USER') PLAN_USER_NM
+             , Y.WO_NO WO_NO
+             , Y.WO_NM WO_NM
+          FROM WO0101M X, WO0201M Y
+         WHERE X.REQ_NO = Y.REQ_NO
+           AND UPPER(X.REQ_ORG_CD) = UPPER(#{fChartCd})
+          <if test="fReqYm != null &amp;&amp; fReqYm != ''">
+           AND UPPER(SUBSTRING(REPLACE(X.REQ_YMD, '-', ''),0,7)) = UPPER(#{fReqYm})
+          </if>
+           AND SUBSTRING(REPLACE(REQ_YMD, '-', ''), 1, 6)<![CDATA[ >= ]]> SUBSTRING(REPLACE(DATEADD(MM,-11,CONVERT(DATE,#{fEndDate})),'-',''),0,7)
+           AND SUBSTRING(REPLACE(REQ_YMD, '-', ''), 1, 6)<![CDATA[ <= ]]> SUBSTRING(REPLACE(DATEADD(MM,0,CONVERT(DATE,#{fEndDate})),'-',''),0,7)
+        </if>
+        <if test='fcon == "B"'>
+        SELECT
+               (SELECT EQ_NO
+                  FROM EQ0101M
+                 WHERE EQ_NO = X.EQ_NO
+                   AND REV_NO = #{revNo}) EQ_NO
+             , dbo.FN_NAME(X.EQ_NO,'EQUIP') EQ_NM
+             , X.REQ_NO REQ_NO
+             , X.REQ_NM REQ_NM
+             , dbo.FN_NAME(X.WO_TP,'WO_TP') WO_TP
+             , dbo.FN_NAME(WO_REQ_STS,'WO_REQ_STS') WO_REQ_STS
+             , REPLACE(REQ_YMD, '-', '')
+             , dbo.FN_NAME(X.PLAN_ORG_CD,'DEPT') PLAN_ORG_NM
+             , dbo.FN_NAME(REQ_USER_ID,'USER') REQ_USER_NM
+             , dbo.FN_NAME(Y.PLAN_USER_ID,'USER') PLAN_USER_NM
+             , Y.WO_NO WO_NO
+             , Y.WO_NM WO_NM
+          FROM WO0101M X, WO0201M Y
+         WHERE X.REQ_NO = Y.REQ_NO
+           AND UPPER(X.PLAN_ORG_CD) = UPPER(#{fChartCd})
+          <if test="fReqYm != null &amp;&amp; fReqYm != ''">
+           AND UPPER(SUBSTRING(REPLACE(X.REQ_YMD, '-', ''),0,7)) = UPPER(#{fReqYm})
+          </if>
+           AND SUBSTRING(REPLACE(REQ_YMD, '-', ''), 1, 6)<![CDATA[ >= ]]> SUBSTRING(REPLACE(DATEADD(MM,-11,CONVERT(DATE,#{fEndDate})),'-',''),0,7)
+           AND SUBSTRING(REPLACE(REQ_YMD, '-', ''), 1, 6)<![CDATA[ <= ]]> SUBSTRING(REPLACE(DATEADD(MM,-0,CONVERT(DATE,#{fEndDate})),'-',''),0,7)
+        </if>
+        <if test='fcon == "C"'>
+        SELECT
+               (SELECT EQ_NO
+                  FROM EQ0101M
+                 WHERE EQ_NO = X.EQ_NO
+                   AND REV_NO = #{revNo}) EQ_NO
+             , dbo.FN_NAME(X.EQ_NO,'EQUIP') EQ_NM
+             , X.REQ_NO REQ_NO
+             , X.REQ_NM REQ_NM
+             , dbo.FN_NAME(X.WO_TP,'WO_TP') WO_TP
+             , dbo.FN_NAME(WO_REQ_STS,'WO_REQ_STS') WO_REQ_STS
+             , REPLACE(REQ_YMD, '-', '')
+             , dbo.FN_NAME(X.PLAN_ORG_CD,'DEPT') PLAN_ORG_NM
+             , dbo.FN_NAME(REQ_USER_ID,'USER') REQ_USER_NM
+             , dbo.FN_NAME(Y.PLAN_USER_ID,'USER') PLAN_USER_NM
+             , Y.WO_NO WO_NO
+             , Y.WO_NM WO_NM
+          FROM WO0101M X, WO0201M Y, EQ0101M Z
+         WHERE X.REQ_NO = Y.REQ_NO
+           AND X.EQ_NO = Z.EQ_NO
+           AND Z.REV_NO = #{revNo}
+           AND UPPER(X.EQ_NO) = UPPER(#{fChartCd})
+          <if test="fReqYm != null &amp;&amp; fReqYm != ''">
+           AND UPPER(SUBSTRING(REPLACE(X.REQ_YMD, '-', ''),0,7)) = UPPER(#{fReqYm})
+          </if>
+           AND SUBSTRING(REPLACE(REQ_YMD, '-', ''), 1, 6)<![CDATA[ >= ]]> SUBSTRING(REPLACE(DATEADD(MM,-11,CONVERT(DATE,#{fEndDate})),'-',''),0,7)
+           AND SUBSTRING(REPLACE(REQ_YMD, '-', ''), 1, 6)<![CDATA[ <= ]]> SUBSTRING(REPLACE(DATEADD(MM,0,CONVERT(DATE,#{fEndDate})),'-',''),0,7)
+        </if>
+    </select>
+</mapper>

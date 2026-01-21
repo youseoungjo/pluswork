@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : PT1901Sqlmap.xml
+* Description : 품목정보
+* Author :
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrievePT1901List : 품목정보 목록 조회
+*************************************************************************************-->
+<mapper namespace="pt1901">
+    <select id="retrievePT1901List" parameterType="map" resultType="map" >
+       <![CDATA[ /* pt1901.retrievePT1901List */ ]]>
+       SELECT
+              PLANT_CODE
+            , DBO.FN_NAME(PLANT_CODE, 'PLANT_CODE') AS PLANT_NM
+            , FACTORY_CODE
+            , DBO.FN_NAME(FACTORY_CODE, 'FACTORY_CODE') AS FACTORY_NM
+            , ITEM_ID
+            , ITEM_NM
+            , ITEM_NM_ZH
+            , ITEM_NM_EN
+            , MAT_GRP_CD
+            , MAT_TP_CD
+            , ITEM_SPEC
+            , MAT_UNIT_CD
+            , PROD_STEP_ID
+            , VALID_DRAW_NO
+            , PRIMARY_BAND_CD
+            , PRIMARY_PLATFORM_CD
+            , PRIMARY_PGM_CD
+            , PRIMARY_MODEL_CD
+            , EVAL_CLASS_CD
+            , PROCUREMENT_TP_CD
+            , MAT_SYMBOL_CD
+            , ITEM1
+            , ITEM2
+            , ITEM3
+            , WEIGHT_UNIT
+            , OLD_ITEM_ID
+            , NET_WEIGHT
+            , USE_YN
+            , REMARK
+         FROM PT0101G
+        WHERE 1= 1
+          AND MAT_TP_CD IN ('HALB', 'FERT')
+          AND PROCUREMENT_TP_CD =  'E'
+          AND PLANT_CODE = #{plantCode}
+        <if test="factoryCode != null &amp;&amp; factoryCode != ''">
+          AND FACTORY_CODE IN (${factoryCode})
+        </if>
+        <if test="itemNm != null &amp;&amp; itemNm != ''">
+          AND (UPPER(ITEM_ID) LIKE '%'  +  UPPER(#{itemNm})  +  '%' OR UPPER(ITEM_NM) LIKE '%'  +  UPPER(#{itemNm})  +  '%' )
+        </if>
+        ORDER BY ITEM_ID
+    </select>
+
+
+
+</mapper>

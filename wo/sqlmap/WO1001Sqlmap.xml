@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : 작업완료현황
+* Description : 작업완료현황
+* Author : jit13
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveIN0401    : 작업완료현황 조회
+*************************************************************************************-->
+<mapper namespace="wo1001">
+    <!-- 작업완료현황 조회 -->
+    <select id="retrieveWO1001" parameterType="map" resultType="map" >
+        <![CDATA[ /* wo1001.retrieveWO1001 */ ]]>
+        SELECT
+                X.WO_NO
+              , X.WO_NM
+              , dbo.FN_NAME(X.WO_DIV, 'WO_DIV') WO_DIV
+              , dbo.FN_NAME(X.WO_STS, 'WO_STS') WO_STS
+              , dbo.FN_NAME(Z.REQ_ORG_CD, 'DEPT') REQ_ORG_NM
+              , dbo.FN_NAME(X.PLAN_ORG_CD, 'DEPT') PLAN_ORG_NM
+              , X.PLAN_ORG_CD
+              , Z.REQ_USER_ID
+              , dbo.FN_NAME(Z.REQ_USER_ID, 'USER') AS REQ_USER_NM
+              , dbo.FN_NAME(X.PLAN_USER_ID, 'USER') AS PLAN_USER_NM
+              , X.PLAN_USER_ID
+              , Y.ITEM_NO
+              , Y.EQ_NM
+              , X.PLAN_START_YMD
+              , X.PLAN_END_YMD
+              , X.START_YMD
+              , X.END_YMD
+              , X.REQ_NO
+              , X.EQ_NO
+              , Y.EQ_STS
+			  , dbo.FN_NAME(X.WO_TP, 'WO_TP') WO_TP
+              , X.PRNT_WO_NO
+              , X.ORG_CD
+              , X.PM_NO
+              , X.FILE_ATCH_ID
+              , X.PLAN_LABOR_COST
+              , X.PLAN_ETC_COST
+              , dbo.FN_NAME(X.ORG_CD, 'DEPT') WORK_ORG_NM
+              , X.WORK_USER_ID
+              , dbo.FN_NAME(X.WORK_USER_ID, 'USER') AS WORK_USER_NM
+              , X.PLAN_START_TIME
+              , X.PLAN_END_TIME
+              , X.START_TIME
+              , X.END_TIME
+              , X.CMMNT
+              , X.WORK_DESC
+              , Y.EQ_TP
+              , dbo.FN_NAME(Y.EQ_TP, 'EQ_TP') EQ_TP_NM
+              , X.FST_PROD_CHK_USER_ID
+              , dbo.FN_NAME(X.FST_PROD_CHK_USER_ID, 'USER') AS FST_PROD_CHK_USER_NM
+              , dbo.FN_NAME(X.FST_PROD_CHK, 'CHK_RSLT') AS FST_PROD_CHK
+			  , dbo.FN_NAME(X.WORK_DELAY_CMMNT, 'DELAY_REASON') AS WORK_DELAY_CMMNT
+              , X.BROKEN_START_YMD
+              , X.BROKEN_START_TIME
+              , X.BROKEN_END_YMD
+              , X.BROKEN_END_TIME
+              , CONVERT(CHAR(16), Z.RECEIPT_DT, 120) AS RECEIPT_DT
+              , Z.REQ_YMD
+              , Z.REQ_TIME
+              , CONVERT(CHAR(16), CONVERT(VARCHAR, Z.REQ_YMD + ' ' + Z.REQ_TIME+ ':00', 120), 120) AS REQ_DT
+              , Z.REQ_DESC
+              , X.FST_PROD_REMARK
+              , (SELECT CLS_NM FROM EQ0201M WHERE COMPANY_CD = Y.COMPANY_CD AND PLANT_CODE = Y.PLANT_CODE AND FACTORY_CODE = Y.FACTORY_CODE AND CLS_CD = Y.EQ_LINE) AS EQ_LINE_NM
+              , X.FNL_EDIT_USER_ID
+              , dbo.FN_NAME(X.FNL_EDIT_USER_ID, 'USER') AS FNL_EDIT_USER_NM
+			  , DBO.FN_NAME(ISNULL(X.REPAIR_TP, Z.REPAIR_TP), 'REPAIR_TP') AS REPAIR_TP
+              , CASE WHEN ISNULL(X.BROKEN_END_YMD,'') != '' AND ISNULL(X.BROKEN_END_TIME,'') != ''
+                     THEN ISNULL(DATEDIFF(MINUTE, CONVERT(CHAR(16), CONVERT(VARCHAR, X.BROKEN_START_YMD + ' ' + X.BROKEN_START_TIME+ ':00', 120), 120), CONVERT(CHAR(16), CONVERT(VARCHAR, X.BROKEN_END_YMD + ' ' + X.BROKEN_END_TIME+ ':00', 120), 120)),0)
+                     ELSE ''
+                 END BROKEN_MINUTE_DIFF
+              , ISNULL(DATEDIFF(MINUTE, CONVERT(CHAR(16), CONVERT(VARCHAR, X.START_YMD + ' ' + X.START_TIME+ ':00', 120), 120), CONVERT(CHAR(16), CONVERT(VARCHAR, X.END_YMD + ' ' + X.END_TIME+ ':00', 120), 120)),0) AS WORK_MINUTE_DIFF
+              , ISNULL(DATEDIFF(MINUTE, CONVERT(CHAR(16), CONVERT(VARCHAR, Z.REQ_YMD + ' ' + Z.REQ_TIME+ ':00', 120), 120), CONVERT(CHAR(16), Z.RECEIPT_DT, 120)),0) AS MINUTE_DIFF
+			  , DBO.FN_NAME(Z.REQ_TP, 'REQ_TP') AS REQ_TP
+              , X.WORK_HOUR
+			  , (SELECT COUNT(*) FROM WO0302J A  WHERE X.WO_NO = A.WO_NO AND X.COMPANY_CD = A.COMPANY_CD) AS JOB_CNT
+			  , (SELECT COUNT(*) FROM WO0302C B  WHERE X.WO_NO = B.WO_NO AND X.COMPANY_CD = B.COMPANY_CD) AS CRAFT_CNT
+			  , (SELECT ISNULL(SUM(USE_QTY), 0) FROM WO0301P C  WHERE X.WO_NO = C.WO_NO AND X.COMPANY_CD = C.COMPANY_CD) AS PART_CNT
+			  , (SELECT COUNT(*) FROM WO0303R D  WHERE X.WO_NO = D.WO_NO AND X.COMPANY_CD = D.COMPANY_CD) AS RESULT_CNT
+			  , R.SYMPTM_CD
+			  , R.FAIL_CD
+			  , R.REPR_CD
+			  , R.WORK_REGION_CD AS WORK_REGION_CD
+			  , (SELECT ACT_NM FROM WO0303C WHERE ACT_CD = R.SYMPTM_CD AND ACT_CLS = 'S' AND USE_YN = 'Y') AS SYMPTM_NM
+			  , (SELECT ACT_NM FROM WO0303C WHERE ACT_CD = R.FAIL_CD AND ACT_CLS = 'F' AND USE_YN = 'Y') AS FAIL_NM
+			  , (SELECT ACT_NM FROM WO0303C WHERE ACT_CD = R.REPR_CD AND ACT_CLS = 'R' AND USE_YN = 'Y') AS REPR_NM
+           FROM WO0201M X
+          INNER JOIN EQ0101M Y ON (Y.EQ_NO = X.EQ_NO AND Y.COMPANY_CD = X.COMPANY_CD)
+           LEFT OUTER JOIN  WO0101M Z ON (Z.REQ_NO = X.REQ_NO AND Z.COMPANY_CD = X.COMPANY_CD)
+           LEFT OUTER JOIN WO0303R R ON (X.WO_NO = R.WO_NO AND X.COMPANY_CD = R.COMPANY_CD)
+          WHERE Y.REV_NO = '202011001'
+            AND X.COMPANY_CD = #{companyCd}
+        <if test="fworkStartYmd != null &amp;&amp; fworkStartYmd != '' &amp;&amp; fworkEndYmd != null &amp;&amp; fworkEndYmd != ''">
+           AND X.START_YMD BETWEEN #{fworkStartYmd} AND  #{fworkEndYmd}
+        </if>
+        <if test="feqNo != null &amp;&amp; feqNo != ''">
+           AND X.EQ_NO = #{feqNo}
+        </if>
+        <if test="flineCd != null &amp;&amp; flineCd != ''">
+           AND Y.EQ_LINE IN (${flineCd})
+        </if>
+        <if test="fwoNo != null &amp;&amp; fwoNo != ''">
+           AND UPPER(X.WO_NO) LIKE '%' + UPPER(#{fwoNo}) + '%'
+        </if>
+        <if test="fwoTp != null &amp;&amp; fwoTp != ''">
+           AND X.WO_TP IN (${fwoTp})
+         </if>
+        <if test="fwoDiv != null &amp;&amp; fwoDiv != ''">
+           AND X.WO_DIV IN (${fwoDiv})
+         </if>
+        <if test="fPlantCode != null &amp;&amp; fPlantCode != ''">
+           AND Y.PLANT_CODE IN (${fPlantCode})
+         </if>
+        <if test="fFactoryCode != null &amp;&amp; fFactoryCode != ''">
+           AND Y.FACTORY_CODE IN (${fFactoryCode})
+         </if>
+         <if test="frepairTp != null &amp;&amp; frepairTp != ''">
+           AND ISNULL(X.REPAIR_TP, Z.REPAIR_TP) IN (${frepairTp})
+         </if>
+         <if test="fwoSts != null &amp;&amp; fwoSts != ''">
+           AND X.WO_STS IN (${fwoSts})
+         </if>
+    </select>
+
+
+</mapper>

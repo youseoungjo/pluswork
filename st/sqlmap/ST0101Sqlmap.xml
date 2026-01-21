@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : 점검데이터작성
+* Description : 점검데이터작성
+* Author : jit13
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveMT0101     : 점검데이터 목록 조회
+*************************************************************************************-->
+<mapper namespace="st0101">
+    <!-- 점검데이터작성 조회 -->
+    <select id="retrieveST0101Chart" parameterType="map" resultType="map" >
+        <![CDATA[ /* st0101.retrieveST0101Chart */ ]]>
+        <if test='fcon == "A"'>
+        SELECT
+                dbo.FN_NAME(REQ_ORG_CD,'DEPT') CHART_NM
+              , EM_CNT
+              , BM_CNT
+              , PM_CNT
+              , CM_CNT
+              , GM_CNT
+           FROM (
+                 SELECT
+                        X.REQ_ORG_CD
+                      , SUM(CASE WHEN X.WO_TP = 'WT01' THEN 1 ELSE 0 END) EM_CNT
+                      , SUM(CASE WHEN X.WO_TP = 'WT02' THEN 1 ELSE 0 END) BM_CNT
+                      , SUM(CASE WHEN X.WO_TP = 'WT03' THEN 1 ELSE 0 END) PM_CNT
+                      , SUM(CASE WHEN X.WO_TP = 'WT04' THEN 1 ELSE 0 END) CM_CNT
+                      , SUM(CASE WHEN X.WO_TP = 'WT05' THEN 1 ELSE 0 END) GM_CNT
+                   FROM WO0101M X
+                  WHERE 1=1
+                    AND X.WO_REQ_STS='AZ'
+                    AND X.COMPANY_CD = #{companyCd}
+                    <if test="fStartDate != null &amp;&amp; fStartDate != ''">
+                    AND X.REQ_YMD  <![CDATA[ >= ]]> #{fStartDate}
+                    </if>
+                    <if test="fEndDate != null &amp;&amp; fEndDate != ''">
+                    AND X.REQ_YMD  <![CDATA[ <= ]]> #{fEndDate}
+                    </if>
+                  GROUP BY REQ_ORG_CD
+               ) A
+              <if test="sumCntS != null &amp;&amp; sumCntS != ''">
+                  WHERE EM_CNT+BM_CNT+PM_CNT+CM_CNT+GM_CNT >= #{sumCntS}
+              </if>
+        </if>
+        <if test='fcon == "B"'>
+        SELECT
+                dbo.FN_NAME(PLAN_ORG_CD,'DEPT') CHART_NM
+              , EM_CNT
+              , BM_CNT
+              , PM_CNT
+              , CM_CNT
+              , GM_CNT
+           FROM (
+                 SELECT
+                        X.PLAN_ORG_CD
+                      , SUM(CASE WHEN X.WO_TP = 'WT01' THEN 1 ELSE 0 END) EM_CNT
+                      , SUM(CASE WHEN X.WO_TP = 'WT02' THEN 1 ELSE 0 END) BM_CNT
+                      , SUM(CASE WHEN X.WO_TP = 'WT03' THEN 1 ELSE 0 END) PM_CNT
+                      , SUM(CASE WHEN X.WO_TP = 'WT04' THEN 1 ELSE 0 END) CM_CNT
+                      , SUM(CASE WHEN X.WO_TP = 'WT05' THEN 1 ELSE 0 END) GM_CNT
+                  FROM WO0101M X
+                 WHERE 1=1
+                   AND X.WO_REQ_STS='AZ'
+                   AND X.COMPANY_CD = #{companyCd}
+                   <if test="fStartDate != null &amp;&amp; fStartDate != ''">
+                   AND X.REQ_YMD  <![CDATA[ >= ]]> #{fStartDate}
+                   </if>
+                   <if test="fEndDate != null &amp;&amp; fEndDate != ''">
+                   AND X.REQ_YMD  <![CDATA[ <= ]]> #{fEndDate}
+                   </if>
+                   AND X.PLAN_ORG_CD IS NOT NULL
+                 GROUP BY PLAN_ORG_CD
+               ) A
+              <if test="sumCntS != null &amp;&amp; sumCntS != ''">
+                  WHERE EM_CNT+BM_CNT+PM_CNT+CM_CNT+GM_CNT >= #{sumCntS}
+              </if>
+        </if>
+        <if test='fcon == "C"'>
+         SELECT
+                (SELECT CLS_NM FROM EQ0201M WHERE CLS_CD = X.EQ_LINE AND CLS_TYPE = 'E' AND EQ_CLS = 'EQ_PRCS') AS CHART_NM
+              , SUM(EM_CNT) AS EM_CNT
+              , SUM(BM_CNT) AS BM_CNT
+              , SUM(PM_CNT) AS PM_CNT
+              , SUM(CM_CNT) AS CM_CNT
+              , SUM(GM_CNT) AS GM_CNT
+           FROM (
+                 SELECT
+                        x.EQ_NO
+					  , DBO.FN_NAME(X.EQ_NO, 'EQ_LINE') AS EQ_LINE
+                      , SUM(CASE WHEN X.WO_TP = 'WT01' THEN 1 ELSE 0 END) EM_CNT
+                      , SUM(CASE WHEN X.WO_TP = 'WT02' THEN 1 ELSE 0 END) BM_CNT
+                      , SUM(CASE WHEN X.WO_TP = 'WT03' THEN 1 ELSE 0 END) PM_CNT
+                      , SUM(CASE WHEN X.WO_TP = 'WT04' THEN 1 ELSE 0 END) CM_CNT
+                      , SUM(CASE WHEN X.WO_TP = 'WT05' THEN 1 ELSE 0 END) GM_CNT
+                   FROM WO0101M X
+				  INNER JOIN EQ0101M Y ON (X.EQ_NO = Y.EQ_NO)
+                  WHERE X.WO_REQ_STS= 'AZ'
+                    AND Y.REV_NO = '202011001'
+                    AND X.COMPANY_CD = #{companyCd}
+                    <if test="fStartDate != null &amp;&amp; fStartDate != ''">
+                    AND X.REQ_YMD  <![CDATA[ >= ]]> #{fStartDate}
+                    </if>
+                    <if test="fEndDate != null &amp;&amp; fEndDate != ''">
+                    AND X.REQ_YMD  <![CDATA[ <= ]]> #{fEndDate}
+                    </if>
+
+                GROUP BY x.EQ_NO
+                ) X
+
+            WHERE 1=1
+              <if test="flineCd != null &amp;&amp; flineCd != ''">
+          	  AND X.EQ_LINE IN (${flineCd})
+              </if>
+
+			GROUP BY X.EQ_LINE
+              <if test="sumCntS != null &amp;&amp; sumCntS != ''">
+            HAVING SUM(EM_CNT)+SUM(BM_CNT)+SUM(PM_CNT)+SUM(CM_CNT)+SUM(GM_CNT) >= #{sumCntS}
+              </if>
+			ORDER BY SUM(EM_CNT)+SUM(BM_CNT)+SUM(PM_CNT)+SUM(CM_CNT)+SUM(GM_CNT) DESC
+        </if>
+        <if test='fcon == "D"'>
+        SELECT
+                dbo.FN_NAME(REQ_USER_ID,'USER') CHART_NM
+              , EM_CNT
+              , BM_CNT
+              , PM_CNT
+              , CM_CNT
+              , GM_CNT
+           FROM (
+                 SELECT
+                        X.REQ_USER_ID
+                      , SUM(CASE WHEN X.WO_TP = 'WT01' THEN 1 ELSE 0 END) EM_CNT
+                      , SUM(CASE WHEN X.WO_TP = 'WT02' THEN 1 ELSE 0 END) BM_CNT
+                      , SUM(CASE WHEN X.WO_TP = 'WT03' THEN 1 ELSE 0 END) PM_CNT
+                      , SUM(CASE WHEN X.WO_TP = 'WT04' THEN 1 ELSE 0 END) CM_CNT
+                      , SUM(CASE WHEN X.WO_TP = 'WT05' THEN 1 ELSE 0 END) GM_CNT
+                  FROM WO0101M X, EQ0101M Y, SC_USER Z
+                 WHERE X.EQ_NO = Y.EQ_NO
+                   AND Y.REV_NO = #{revNo}
+                   AND X.REQ_USER_ID = Z.USER_ID
+                   AND X.WO_REQ_STS ='AZ'
+                   AND X.COMPANY_CD = #{companyCd}
+                   <if test="finputNo != null &amp;&amp; finputNo != ''">
+                   AND X.REQ_USER_ID = #{finputNo}
+                   </if>
+                   <if test="fStartDate != null &amp;&amp; fStartDate != ''">
+                   AND X.REQ_YMD  <![CDATA[ >= ]]> #{fStartDate}
+                   </if>
+                   <if test="fEndDate != null &amp;&amp; fEndDate != ''">
+                   AND X.REQ_YMD  <![CDATA[ <= ]]> #{fEndDate}
+                   </if>
+                 GROUP BY REQ_USER_ID
+               ) A
+              <if test="sumCntS != null &amp;&amp; sumCntS != ''">
+                  WHERE EM_CNT+BM_CNT+PM_CNT+CM_CNT+GM_CNT >= #{sumCntS}
+              </if>
+        </if>
+    </select>
+
+    <select id="retrieveST0101List" parameterType="map" resultType="map" >
+        <![CDATA[ /* st0101.retrieveST0101List */ ]]>
+        <if test='fcon == "A"'>
+        SELECT
+               REQ_ORG_CD CHART_CD
+             , dbo.FN_NAME(REQ_ORG_CD,'DEPT') CHART_NM
+             , EM_CNT
+             , ROUND(ROUND(CONVERT(FLOAT, EM_CNT) / CASE WHEN TOTAL_CNT = 0 THEN 1 ELSE TOTAL_CNT END,2)*100,0) EM_RATE
+             , BM_CNT
+             , ROUND(ROUND(CONVERT(FLOAT, BM_CNT) / CASE WHEN TOTAL_CNT = 0 THEN 1 ELSE TOTAL_CNT END,2)*100,0) BM_RATE
+             , CM_CNT
+             , ROUND(ROUND(CONVERT(FLOAT, CM_CNT) / CASE WHEN TOTAL_CNT = 0 THEN 1 ELSE TOTAL_CNT END,2)*100,0) CM_RATE
+             , PM_CNT
+             , ROUND(ROUND(CONVERT(FLOAT, PM_CNT) / CASE WHEN TOTAL_CNT = 0 THEN 1 ELSE TOTAL_CNT END,2)*100,0) PM_RATE
+             , GM_CNT
+             , ROUND(ROUND(CONVERT(FLOAT, GM_CNT) / CASE WHEN TOTAL_CNT = 0 THEN 1 ELSE TOTAL_CNT END,2)*100,0) GM_RATE
+             , TOTAL_CNT
+          FROM (
+                SELECT
+                       X.REQ_ORG_CD
+                     , SUM(CASE WHEN X.WO_TP = 'WT01' THEN 1 ELSE 0 END) EM_CNT
+                     , SUM(CASE WHEN X.WO_TP = 'WT02' THEN 1 ELSE 0 END) BM_CNT
+                     , SUM(CASE WHEN X.WO_TP = 'WT03' THEN 1 ELSE 0 END) PM_CNT
+                     , SUM(CASE WHEN X.WO_TP = 'WT04' THEN 1 ELSE 0 END) CM_CNT
+                     , SUM(CASE WHEN X.WO_TP = 'WT05' THEN 1 ELSE 0 END) GM_CNT
+                     , SUM(CASE WHEN X.WO_TP = 'WT01' THEN 1 ELSE 0 END) + SUM(CASE WHEN X.WO_TP = 'WT02' THEN 1 ELSE 0 END) + SUM(CASE WHEN X.WO_TP = 'WT03' THEN 1 ELSE 0 END) + SUM(CASE WHEN X.WO_TP = 'WT04' THEN 1 ELSE 0 END) + SUM(CASE WHEN X.WO_TP = 'WT05' THEN 1 ELSE 0 END) TOTAL_CNT
+                  FROM WO0101M X
+                 WHERE X.WO_REQ_STS='AZ'
+                   AND X.COMPANY_CD = #{companyCd}
+                    <if test="fStartDate != null &amp;&amp; fStartDate != ''">
+                    AND X.REQ_YMD  <![CDATA[ >= ]]> #{fStartDate}
+                    </if>
+                    <if test="fEndDate != null &amp;&amp; fEndDate != ''">
+                    AND X.REQ_YMD  <![CDATA[ <= ]]> #{fEndDate}
+                    </if>
+                 GROUP BY REQ_ORG_CD
+               ) A
+              <if test="sumCntS != null &amp;&amp; sumCntS != ''">
+                  WHERE EM_CNT+BM_CNT+PM_CNT+CM_CNT+GM_CNT >= #{sumCntS}
+              </if>
+        </if>
+        <if test='fcon == "B"'>
+        SELECT T.CHART_CD, T.CHART_NM, T.EM_CNT, T.BM_CNT, T.CM_CNT, T.PM_CNT, T.GM_CNT, T.TOTAL_CNT
+				, ROUND(ROUND(CONVERT(FLOAT, T.EM_CNT)/TOTAL_CNT,2)*100,0) AS EM_RATE
+		       , ROUND(ROUND(CONVERT(FLOAT, T.BM_CNT)/TOTAL_CNT,2)*100,0) AS BM_RATE
+		       , ROUND(ROUND(CONVERT(FLOAT, T.CM_CNT)/TOTAL_CNT,2)*100,0) AS CM_RATE
+		       , ROUND(ROUND(CONVERT(FLOAT, T.PM_CNT)/TOTAL_CNT,2)*100,0) AS PM_RATE
+		       , ROUND(ROUND(CONVERT(FLOAT, T.GM_CNT)/TOTAL_CNT,2)*100,0) AS GM_RATE
+		FROM (
+			SELECT X.EQ_LINE AS CHART_CD
+		    		, (SELECT CLS_NM FROM EQ0201M WHERE CLS_CD = X.EQ_LINE AND CLS_TYPE = 'E' AND EQ_CLS = 'EQ_PRCS' AND COMPANY_CD = #{companyCd}) AS CHART_NM
+		             , SUM(EM_CNT) AS EM_CNT
+		             , SUM(BM_CNT) AS BM_CNT
+		             , SUM(CM_CNT) AS CM_CNT
+		             , SUM(PM_CNT) AS PM_CNT
+		             , SUM(GM_CNT) AS GM_CNT
+		             , SUM(TOTAL_CNT) AS TOTAL_CNT
+          FROM (
+                SELECT X.PLAN_ORG_CD
+                     , SUM(CASE WHEN X.WO_TP = 'WT01' THEN 1 ELSE 0 END) EM_CNT
+                     , SUM(CASE WHEN X.WO_TP = 'WT02' THEN 1 ELSE 0 END) BM_CNT
+                     , SUM(CASE WHEN X.WO_TP = 'WT03' THEN 1 ELSE 0 END) PM_CNT
+                     , SUM(CASE WHEN X.WO_TP = 'WT04' THEN 1 ELSE 0 END) CM_CNT
+                     , SUM(CASE WHEN X.WO_TP = 'WT05' THEN 1 ELSE 0 END) GM_CNT
+                     , SUM(CASE WHEN X.WO_TP = 'WT01' THEN 1 ELSE 0 END) + SUM(CASE WHEN X.WO_TP = 'WT02' THEN 1 ELSE 0 END) + SUM(CASE WHEN X.WO_TP = 'WT03' THEN 1 ELSE 0 END) + SUM(CASE WHEN X.WO_TP = 'WT04' THEN 1 ELSE 0 END) + SUM(CASE WHEN X.WO_TP = 'WT05' THEN 1 ELSE 0 END) TOTAL_CNT
+                  FROM WO0101M X
+                 WHERE 1=1
+                   AND X.WO_REQ_STS='AZ'
+                   AND X.COMPANY_CD = #{companyCd}
+                   <if test="fStartDate != null &amp;&amp; fStartDate != ''">
+                   AND X.REQ_YMD  <![CDATA[ >= ]]> #{fStartDate}
+                   </if>
+                   <if test="fEndDate != null &amp;&amp; fEndDate != ''">
+                   AND X.REQ_YMD  <![CDATA[ <= ]]> #{fEndDate}
+                   </if>
+                   AND X.PLAN_ORG_CD IS NOT NULL
+                 GROUP BY PLAN_ORG_CD
+               ) A
+              <if test="sumCntS != null &amp;&amp; sumCntS != ''">
+                  WHERE EM_CNT+BM_CNT+PM_CNT+CM_CNT+GM_CNT >= #{sumCntS}
+              </if>
+              )T
+        </if>
+        <if test='fcon == "C"'>
+        SELECT T.CHART_CD, T.CHART_NM, T.EM_CNT, T.BM_CNT, T.CM_CNT, T.PM_CNT, T.GM_CNT, T.TOTAL_CNT
+				, ROUND(ROUND(CONVERT(FLOAT, T.EM_CNT)/TOTAL_CNT,2)*100,0) AS EM_RATE
+		       , ROUND(ROUND(CONVERT(FLOAT, T.BM_CNT)/TOTAL_CNT,2)*100,0) AS BM_RATE
+		       , ROUND(ROUND(CONVERT(FLOAT, T.CM_CNT)/TOTAL_CNT,2)*100,0) AS CM_RATE
+		       , ROUND(ROUND(CONVERT(FLOAT, T.PM_CNT)/TOTAL_CNT,2)*100,0) AS PM_RATE
+		       , ROUND(ROUND(CONVERT(FLOAT, T.GM_CNT)/TOTAL_CNT,2)*100,0) AS GM_RATE
+		FROM (
+			SELECT X.EQ_LINE AS CHART_CD
+		    		, (SELECT CLS_NM FROM EQ0201M WHERE CLS_CD = X.EQ_LINE AND CLS_TYPE = 'E' AND EQ_CLS = 'EQ_PRCS' AND COMPANY_CD = #{companyCd}) AS CHART_NM
+		             , SUM(EM_CNT) AS EM_CNT
+		             , SUM(BM_CNT) AS BM_CNT
+		             , SUM(CM_CNT) AS CM_CNT
+		             , SUM(PM_CNT) AS PM_CNT
+		             , SUM(GM_CNT) AS GM_CNT
+		             , SUM(TOTAL_CNT) AS TOTAL_CNT
+          FROM (
+                SELECT Y.EQ_NO
+				     , DBO.FN_NAME(Y.EQ_NO, 'EQ_LINE') AS EQ_LINE
+                     , SUM(CASE WHEN X.WO_TP = 'WT01' THEN 1 ELSE 0 END) EM_CNT
+                     , SUM(CASE WHEN X.WO_TP = 'WT02' THEN 1 ELSE 0 END) BM_CNT
+                     , SUM(CASE WHEN X.WO_TP = 'WT03' THEN 1 ELSE 0 END) PM_CNT
+                     , SUM(CASE WHEN X.WO_TP = 'WT04' THEN 1 ELSE 0 END) CM_CNT
+                     , SUM(CASE WHEN X.WO_TP = 'WT05' THEN 1 ELSE 0 END) GM_CNT
+                     , SUM(CASE WHEN X.WO_TP = 'WT01' THEN 1 ELSE 0 END) + SUM(CASE WHEN X.WO_TP = 'WT02' THEN 1 ELSE 0 END) + SUM(CASE WHEN X.WO_TP = 'WT03' THEN 1 ELSE 0 END) + SUM(CASE WHEN X.WO_TP = 'WT04' THEN 1 ELSE 0 END) + SUM(CASE WHEN X.WO_TP = 'WT05' THEN 1 ELSE 0 END) TOTAL_CNT
+                 FROM  WO0101M X, EQ0101M Y
+                WHERE X.EQ_NO = Y.EQ_NO
+                  AND X.WO_REQ_STS= 'AZ'
+                  AND X.COMPANY_CD = #{companyCd}
+                  AND Y.REV_NO = #{revNo}
+                  <if test="fStartDate != null &amp;&amp; fStartDate != ''">
+                  AND X.REQ_YMD  <![CDATA[ >= ]]> #{fStartDate}
+                  </if>
+                  <if test="fEndDate != null &amp;&amp; fEndDate != ''">
+                  AND X.REQ_YMD  <![CDATA[ <= ]]> #{fEndDate}
+                  </if>
+
+               GROUP BY Y.EQ_NO
+               ) X
+           WHERE 1=1
+              <if test="flineCd != null &amp;&amp; flineCd != ''">
+          	  AND X.EQ_LINE IN (${flineCd})
+              </if>
+			   GROUP BY X.EQ_LINE
+              <if test="sumCntS != null &amp;&amp; sumCntS != ''">
+            HAVING SUM(EM_CNT)+SUM(BM_CNT)+SUM(PM_CNT)+SUM(CM_CNT)+SUM(GM_CNT) >= #{sumCntS}
+              </if>
+              ) T
+        </if>
+        <if test='fcon == "D"'>
+        SELECT
+               REQ_USER_ID CHART_CD
+             , dbo.FN_NAME(REQ_USER_ID,'USER') CHART_NM
+             , EM_CNT
+             , ROUND(ROUND(CONVERT(FLOAT, EM_CNT) / CASE WHEN TOTAL_CNT = 0 THEN 1 ELSE TOTAL_CNT END,2)*100,0) EM_RATE
+             , BM_CNT
+             , ROUND(ROUND(CONVERT(FLOAT, BM_CNT) / CASE WHEN TOTAL_CNT = 0 THEN 1 ELSE TOTAL_CNT END,2)*100,0) BM_RATE
+             , CM_CNT
+             , ROUND(ROUND(CONVERT(FLOAT, CM_CNT) / CASE WHEN TOTAL_CNT = 0 THEN 1 ELSE TOTAL_CNT END,2)*100,0) CM_RATE
+             , PM_CNT
+             , ROUND(ROUND(CONVERT(FLOAT, PM_CNT) / CASE WHEN TOTAL_CNT = 0 THEN 1 ELSE TOTAL_CNT END,2)*100,0) PM_RATE
+             , GM_CNT
+             , ROUND(ROUND(CONVERT(FLOAT, GM_CNT) / CASE WHEN TOTAL_CNT = 0 THEN 1 ELSE TOTAL_CNT END,2)*100,0) GM_RATE
+             , TOTAL_CNT
+          FROM (
+                SELECT X.REQ_USER_ID
+                     , SUM(CASE WHEN X.WO_TP = 'WT01' THEN 1 ELSE 0 END) EM_CNT
+                     , SUM(CASE WHEN X.WO_TP = 'WT02' THEN 1 ELSE 0 END) BM_CNT
+                     , SUM(CASE WHEN X.WO_TP = 'WT03' THEN 1 ELSE 0 END) PM_CNT
+                     , SUM(CASE WHEN X.WO_TP = 'WT04' THEN 1 ELSE 0 END) CM_CNT
+                     , SUM(CASE WHEN X.WO_TP = 'WT05' THEN 1 ELSE 0 END) GM_CNT
+                     , SUM(CASE WHEN X.WO_TP = 'WT01' THEN 1 ELSE 0 END) + SUM(CASE WHEN X.WO_TP = 'WT02' THEN 1 ELSE 0 END) + SUM(CASE WHEN X.WO_TP = 'WT03' THEN 1 ELSE 0 END) + SUM(CASE WHEN X.WO_TP = 'WT04' THEN 1 ELSE 0 END) + SUM(CASE WHEN X.WO_TP = 'WT05' THEN 1 ELSE 0 END) TOTAL_CNT
+                  FROM WO0101M X, EQ0101M Y, SC_USER Z
+                 WHERE X.EQ_NO = Y.EQ_NO
+                   AND X.REQ_USER_ID = Z.USER_ID
+                   AND X.COMPANY_CD = #{companyCd}
+                   AND Y.REV_NO = #{revNo}
+                   AND X.WO_REQ_STS ='AZ'
+                   <if test="finputNo != null &amp;&amp; finputNo != ''">
+                   AND X.REQ_USER_ID = #{finputNo}
+                   </if>
+                   <if test="fStartDate != null &amp;&amp; fStartDate != ''">
+                   AND X.REQ_YMD  <![CDATA[ >= ]]> #{fStartDate}
+                   </if>
+                   <if test="fEndDate != null &amp;&amp; fEndDate != ''">
+                   AND X.REQ_YMD  <![CDATA[ <= ]]> #{fEndDate}
+                   </if>
+                 GROUP BY REQ_USER_ID
+               ) A
+              <if test="sumCntS != null &amp;&amp; sumCntS != ''">
+                  WHERE EM_CNT+BM_CNT+PM_CNT+CM_CNT+GM_CNT >= #{sumCntS}
+              </if>
+        </if>
+    </select>
+
+    <select id="retrieveST0101SubList" parameterType="map" resultType="map" >
+        <![CDATA[ /* st0101.retrieveST0101SubList */ ]]>
+        SELECT
+               (SELECT EQ_NO
+                  FROM EQ0101M
+                 WHERE EQ_NO = X.EQ_NO
+                   AND REV_NO = #{revNo} AND COMPANY_CD = #{companyCd}) EQ_NO
+             , dbo.FN_NAME(X.EQ_NO,'EQUIP') EQ_NM
+             , X.REQ_NO
+             , X.REQ_NM
+             , dbo.FN_NAME(X.WO_TP,'WO_TP') WO_TP
+             , dbo.FN_NAME(X.WO_REQ_STS,'WO_REQ_STS') WO_REQ_STS
+             , X.REQ_YMD
+             , dbo.FN_NAME(X.PLAN_ORG_CD,'DEPT') PLAN_ORG_CD
+             , dbo.FN_NAME(X.REQ_USER_ID,'USER') REQ_USER_ID
+             , dbo.FN_NAME(Y.PLAN_USER_ID,'USER') PLAN_USER_ID
+             , Y.WO_NO
+             , Y.WO_NM
+          FROM WO0101M X, WO0201M Y
+         WHERE X.REQ_NO = Y.REQ_NO
+           AND X.COMPANY_CD = #{companyCd}
+           <if test="chartCd != null &amp;&amp; chartCd != ''">
+           AND UPPER(${whereCon}) = UPPER(#{chartCd})
+           </if>
+           <if test="fStartDate != null &amp;&amp; fStartDate != ''">
+           AND X.REQ_YMD  <![CDATA[ >= ]]> #{fStartDate}
+           </if>
+           <if test="fEndDate != null &amp;&amp; fEndDate != ''">
+           AND X.REQ_YMD  <![CDATA[ <= ]]> #{fEndDate}
+           </if>
+        <if test="woTp != null &amp;&amp; woTp != ''">
+           AND UPPER(X.WO_TP) = UPPER(#{woTp})
+        </if>
+    </select>
+</mapper>

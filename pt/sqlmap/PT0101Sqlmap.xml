@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : PT0101Sqlmap.xml
+* Description : 자재마스터 등록/수정/삭제를 위한 Query
+* Author : sds
+* Created Date : 2022-12-06
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrievePT0101List : 자재마스터 목록 조회
+* insertPT0101 : 자재마스터 목록 추가
+* updatePT0101 : 자재마스터 목록 수정
+* deletePT0101 : 자재마스터 목록 삭제
+*************************************************************************************-->
+<mapper namespace="pt0101">
+     <select id="retrievePT0101MList" parameterType="map" resultType="map" >
+         <![CDATA[ /* pt0101.retrievePT0101MList */ ]]>
+         SELECT
+                X.COMPANY_CD
+              , X.PLANT_CODE
+              , X.FACTORY_CODE
+         	  , X.PART_CD
+         	  , X.PART_NM
+         	  , X.PART_TYPE_CD
+         	  , (SELECT COMM_CD_NM FROM SC_COMM_CD WHERE COMM_GRP_CD = 'PART_TYPE' AND COMM_CD = X.PART_TYPE_CD) AS PART_TYPE_NM
+         	  , X.PART_KIND_CD
+         	  , X.SPEC
+         	  , X.MODEL_NO
+         	  , ISNULL(X.MIN_STOCK_QTY, 0) AS MIN_STOCK_QTY
+         	  , ISNULL(X.MAX_STOCK_QTY, 0) AS MAX_STOCK_QTY
+         	  , X.UNIT_CD
+         	  , (SELECT UNIT_NM FROM CO0401M WHERE UNIT_CD = X.UNIT_CD) UNIT_NM
+         	  , X.LARGE_TYPE_CD
+         	  , C.COMM_CD_NM AS LARGE_TYPE_NM
+              , X.MIDDLE_TYPE_CD
+              , B.COMM_CD_NM AS MIDDLE_TYPE_NM
+              , X.SMALL_TYPE_CD
+              , A.COMM_CD_NM AS SMALL_TYPE_NM
+         	  , ISNULL(X.UNIT_COST,0) AS UNIT_COST
+         	  , X.CURRENCY_CD
+         	  , X.DELIVERY_PERIOD
+         	  , X.USE_YN
+         	  , X.MANUFACTURER
+         	  , X.PART_STS
+         	  , X.MATERIAL_TP
+         	  , X.CMMNT
+           FROM PT0101M X
+	       LEFT OUTER JOIN SC_COMM_CD A ON (A.COMM_GRP_CD = 'SMALL_TYPE' AND A.COMM_CD = X.SMALL_TYPE_CD)
+		   LEFT OUTER JOIN SC_COMM_CD B ON (B.COMM_GRP_CD = 'MIDDLE_TYPE' AND B.COMM_CD = X.MIDDLE_TYPE_CD)
+		   LEFT OUTER JOIN SC_COMM_CD C ON (C.COMM_GRP_CD = 'LARGE_TYPE' AND C.COMM_CD = X.LARGE_TYPE_CD)
+          WHERE 1= 1
+            AND X.COMPANY_CD = 'IDR'
+         <if test="plantCodeS != null &amp;&amp; plantCodeS != ''">
+            AND X.PLANT_CODE = #{plantCodeS}
+         </if>
+         <if test="factoryCodeS != null &amp;&amp; factoryCodeS != ''">
+            AND X.FACTORY_CODE IN (${factoryCodeS})
+         </if>
+         <if test="partStsS != null &amp;&amp; partStsS != ''">
+            AND X.PART_STS IN (${partStsS})
+         </if>
+         <if test="materialTpS != null &amp;&amp; materialTpS != ''">
+            AND X.MATERIAL_TP IN (${materialTpS})
+         </if>
+         <if test="partNmS != null &amp;&amp; partNmS != ''">
+            AND (UPPER(X.PART_CD) LIKE '%'  +  UPPER(#{partNmS})  +  '%' OR UPPER(X.PART_NM) LIKE '%'  +  UPPER(#{partNmS})  +  '%' )
+         </if>
+         <if test="specS != null &amp;&amp; specS != ''">
+            AND (UPPER(X.SPEC) LIKE '%'  +  UPPER(#{specS}) + '%')
+         </if>
+         <if test="partTypeCdS != null &amp;&amp; partTypeCdS != ''">
+            AND X.PART_TYPE_CD IN (${partTypeCdS})
+         </if>
+         <if test="materialTpS != null &amp;&amp; materialTpS != ''">
+            AND X.MATERIAL_TP IN (${materialTpS})
+         </if>
+         GROUP BY X.COMPANY_CD, X.PLANT_CODE, X.FACTORY_CODE, X.PART_CD, X.PART_NM, X.PART_TYPE_CD, X.PART_KIND_CD, X.SPEC, X.MODEL_NO
+             , X.MIN_STOCK_QTY, X.MAX_STOCK_QTY, X.UNIT_CD, X.LARGE_TYPE_CD, X.MIDDLE_TYPE_CD
+             , X.SMALL_TYPE_CD, X.UNIT_COST, X.CURRENCY_CD, X.DELIVERY_PERIOD, X.USE_YN
+             , X.MANUFACTURER, X.PART_STS, X.MATERIAL_TP, A.COMM_CD_NM, B.COMM_CD_NM, C.COMM_CD_NM, X.CMMNT
+          ORDER BY PART_CD
+     </select>
+
+    <insert id="insertPT0101M" parameterType="map" >
+        <![CDATA[ /* pt0101.insertPT0101M */ ]]>
+        INSERT INTO PT0101M (
+               PLANT_CODE
+             , FACTORY_CODE
+             , PART_CD
+             , PART_NM
+             , PART_TYPE_CD
+             , PART_KIND_CD
+             , SPEC
+             , MODEL_NO
+             , MIN_STOCK_QTY
+             , MAX_STOCK_QTY
+             , UNIT_CD
+             , CURRENCY_CD
+             , LARGE_TYPE_CD
+             , MIDDLE_TYPE_CD
+             , SMALL_TYPE_CD
+             , UNIT_COST
+             , DELIVERY_PERIOD
+             , USE_YN
+             , MANUFACTURER
+             , PART_STS
+             , MATERIAL_TP
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+             , CMMNT
+        )
+        VALUES (
+               #{plantCode}
+             , #{factoryCode}
+             , #{partCd}
+             , #{partNm}
+             , #{partTypeCd}
+             , #{partKindCd}
+             , #{spec}
+             , #{modelNo}
+             , #{minStockQty}
+             , #{maxStockQty}
+             , #{unitCd}
+             , #{currencyCd}
+             , #{largeTypeCd}
+             , #{middleTypeCd}
+             , #{smallTypeCd}
+             , #{unitCost}
+             , #{deliveryPeriod}
+             , #{useYn}
+             , #{manufacturer}
+             , #{partSts}
+             , #{materialTp}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+             , #{cmmnt}
+        )
+    </insert>
+
+    <update id="updatePT0101M" parameterType="map" >
+        <![CDATA[ /* pt0101.updatePT0101M */ ]]>
+        UPDATE PT0101M
+           SET
+               PART_TYPE_CD      = #{partTypeCd}
+             , PART_KIND_CD      = #{partKindCd}
+             , MODEL_NO          = #{modelNo}
+             , MIN_STOCK_QTY     = #{minStockQty}
+             , MAX_STOCK_QTY     = #{maxStockQty}
+             , CURRENCY_CD       = #{currencyCd}
+             , UNIT_COST         = #{unitCost}
+             , DELIVERY_PERIOD   = #{deliveryPeriod}
+             , USE_YN            = #{useYn}
+             , MANUFACTURER      = #{manufacturer}
+             , PART_STS          = #{partSts}
+             , MATERIAL_TP       = #{materialTp}
+             , FNL_EDIT_DT       = GETDATE()
+             , FNL_EDIT_USER_ID  = #{fnlEditUserId}
+             , CMMNT			 = #{cmmnt}
+         WHERE PLANT_CODE = #{plantCode}
+           AND FACTORY_CODE = #{factoryCode}
+           AND PART_CD = #{partCd}
+    </update>
+
+    <delete id="deletePT0101M" parameterType="map" >
+        <![CDATA[ /* pt0101.deletePT0101M */ ]]>
+        DELETE
+          FROM PT0101M
+         WHERE PLANT_CODE = #{plantCode}
+           AND FACTORY_CODE = #{factoryCode}
+           AND PART_CD = #{partCd}
+    </delete>
+
+    <select id="retrieveMaterialListPopup" parameterType="map" resultType="map" >
+        <![CDATA[ /* pt0101.retrieveMaterialListPopup */ ]]>
+        SELECT
+               X.COMPANY_CD
+             , X.PLANT_CODE
+             , DBO.FN_NAME(X.PLANT_CODE, 'PLANT_CODE') AS PLANT_CODE_NM
+             , X.FACTORY_CODE
+             , DBO.FN_NAME(X.FACTORY_CODE, 'FACTORY_CODE') AS FACTORY_CODE_NM
+             , X.PART_CD
+             , X.PART_NM
+             , X.UNIT_COST
+             , X.CURRENCY_CD
+             , DBO.FN_NAME(X.CURRENCY_CD, 'MONETARY_UNIT') AS CURRENCY_NM
+             , X.UNIT_CD
+             , X.SPEC
+             , X.MANUFACTURER
+             , X.MODEL_NO
+             , X.PART_TYPE_CD
+             , DBO.FN_NAME(X.PART_TYPE_CD, 'PART_TYPE') AS PART_TYPE_NM
+             , X.MATERIAL_TP
+             , DBO.FN_NAME(X.MATERIAL_TP, 'MATERIAL_TP') AS MATERIAL_TP_NM
+          FROM PT0101M X
+         WHERE 1=1
+           AND X.COMPANY_CD = #{companyCd}
+        <if test="plantCodeS != null &amp;&amp; plantCodeS != ''">
+          AND X.PLANT_CODE = #{plantCodeS}
+        </if>
+        <if test="factoryCodeS != null &amp;&amp; factoryCodeS != ''">
+          AND X.FACTORY_CODE = #{factoryCodeS}
+        </if>
+        <if test="materialNmS != null &amp;&amp; materialNmS != ''">
+          AND (UPPER(X.PART_CD) LIKE '%'  +  UPPER(#{materialNmS})  +  '%' OR UPPER(X.PART_NM) LIKE '%'  +  UPPER(#{materialNmS})  +  '%' )
+        </if>
+        <if test="specS != null &amp;&amp; specS != ''">
+          AND UPPER(X.SPEC) LIKE '%'  +  UPPER(#{specS})  +  '%'
+        </if>
+        ORDER BY X.PART_CD
+    </select>
+
+
+</mapper>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : WO0501
+* Description : 작업요청
+* Author :
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveWO0501List : 메뉴 목록 조회
+* insertWO0501 : 작업요청 목록 추가
+* updateWO0501 : 작업요청 목록 수정
+* deleteWO0501 : 작업요청 목록 삭제
+*************************************************************************************-->
+<mapper namespace="wo0501">
+    <select id="retrieveWO0501List" parameterType="map" resultType="map" >
+        <![CDATA[ /* wo0501.retrieveWO0501List */ ]]>
+        SELECT A.WO_NO
+             , A.WO_NM
+             , A.WO_STS
+             , A.REQ_NO
+             , A.REQ_NM
+             , A.WORK_USER
+             , A.REQ_DT
+             , A.RECEIPT_DT
+             , A.PLAN_YMD
+             , A.PLAN_CONFIRM
+             , A.START_YMD
+             , A.CLOSE_DT
+          FROM (
+                SELECT
+                       Y.WO_NO WO_NO
+                     , Y.WO_NM WO_NM
+                     , Y.WO_STS
+                     , X.REQ_NO
+                     , X.REQ_NM
+                     , dbo.FN_NAME(Y.WORK_USER_ID,'USER') WORK_USER
+                     , CONVERT(VARCHAR(16),X.FST_REG_DT,120) REQ_DT
+                     , CONVERT(VARCHAR(16),X.RECEIPT_DT,120) RECEIPT_DT
+                     , CONCAT(Y.PLAN_START_YMD, ' ' + Y.PLAN_START_TIME) AS PLAN_YMD
+                     , (SELECT MAX(A.APPR_YMD + ' ' + LEFT(A.APPR_TIME,2) + ':' + RIGHT(A.APPR_TIME,2)) FROM AF0101M A WHERE A.DUTY_NO = Y.WO_NO AND A.APPR_TP = 'WOP' AND APPR_STS NOT IN ('APP04', 'APP05')) PLAN_CONFIRM
+                     , CONCAT(Y.START_YMD, ' ' + Y.START_TIME) AS START_YMD
+                     , (SELECT A.APPR_YMD + ' ' + LEFT(A.APPR_TIME,2) + ':' + RIGHT(A.APPR_TIME,2) FROM AF0101M A WHERE A.DUTY_NO = Y.WO_NO AND A.APPR_TP = 'WOC' AND APPR_STS = 'APP03') CLOSE_DT
+                  FROM WO0101M X
+                 INNER JOIN EQ0101M E ON E.EQ_NO = X.EQ_NO
+                 RIGHT OUTER JOIN WO0201M Y ON Y.REQ_NO = X.REQ_NO
+               ) A
+         WHERE 1=1
+         <if test="fWoNo != null &amp;&amp; fWoNo != ''">
+           AND (UPPER(A.WO_NO) LIKE '%' + UPPER(#{fWoNo}) + '%' OR UPPER(A.WO_NM) LIKE '%' + UPPER(#{fWoNo}) + '%')
+        </if>
+         <if test="fReqNo != null &amp;&amp; fReqNo != ''">
+           AND (UPPER(A.REQ_NO) LIKE '%' + UPPER(#{fReqNo}) + '%' OR UPPER(A.REQ_NM) LIKE '%' + UPPER(#{fReqNo}) + '%')
+        </if>
+        <if test="fWoSts != null &amp;&amp; fWoSts != ''">
+           AND A.WO_STS IN (${fWoSts})
+        </if>
+        	 AND ( CONVERT(VARCHAR(10), A.REQ_DT,23) BETWEEN ISNULL(CASE WHEN #{fStartYmd} = '' THEN NULL ELSE #{fStartYmd} END, '2022-01-01') AND ISNULL(CASE WHEN #{fEndYmd} = '' THEN NULL ELSE #{fEndYmd} END, '2099-12-31')
+				OR CONVERT(VARCHAR(10), A.RECEIPT_DT,23) BETWEEN ISNULL(CASE WHEN #{fStartYmd} = '' THEN NULL ELSE #{fStartYmd} END, '2022-01-01') AND ISNULL(CASE WHEN #{fEndYmd} = '' THEN NULL ELSE #{fEndYmd} END, '2099-12-31')
+				OR CONVERT(VARCHAR(10), A.PLAN_YMD,23) BETWEEN ISNULL(CASE WHEN #{fStartYmd} = '' THEN NULL ELSE #{fStartYmd} END, '2022-01-01') AND ISNULL(CASE WHEN #{fEndYmd} = '' THEN NULL ELSE #{fEndYmd} END, '2099-12-31')
+				OR CONVERT(VARCHAR(10), A.START_YMD,23) BETWEEN ISNULL(CASE WHEN #{fStartYmd} = '' THEN NULL ELSE #{fStartYmd} END, '2022-01-01') AND ISNULL(CASE WHEN #{fEndYmd} = '' THEN NULL ELSE #{fEndYmd} END, '2099-12-31')
+				OR CONVERT(VARCHAR(10), A.CLOSE_DT,23) BETWEEN ISNULL(CASE WHEN #{fStartYmd} = '' THEN NULL ELSE #{fStartYmd} END, '2022-01-01') AND ISNULL(CASE WHEN #{fEndYmd} = '' THEN NULL ELSE #{fEndYmd} END, '2099-12-31')
+				)
+
+
+
+        ORDER BY A.WO_NO ASC
+    </select>
+</mapper>
