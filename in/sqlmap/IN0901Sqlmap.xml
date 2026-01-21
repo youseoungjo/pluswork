@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : 점검데이터작성
+* Description : 점검데이터작성
+* Author : jit13
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveIN0901     : 점검 UBM
+*************************************************************************************-->
+<mapper namespace="in0901">
+    <!-- 점검데이터작성 조회 -->
+    <select id="retrieveIN0901" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0901.retrieveIN0901 */ ]]>
+        <if test="eqNo != null &amp;&amp; eqNo != ''">
+         WITH EQ_PRCS
+         AS (
+             SELECT CLS_CD
+         	FROM EQ0201M
+            WHERE CLS_CD IN (${eqNo})
+              AND EQ_CLS = 'EQ_PRCS'
+              AND REV_NO = #{revNo}
+            UNION ALL
+           SELECT M.CLS_CD
+             FROM EQ0201M M
+         	JOIN EQ_PRCS N ON M.PRNT_CLS_CD = N.CLS_CD
+         ),
+         EQ_TP
+         AS (
+             SELECT CLS_CD
+         	FROM EQ0201M
+            WHERE CLS_CD IN (${eqNo})
+              AND EQ_CLS = 'EQ_TP'
+              AND REV_NO = #{revNo}
+            UNION ALL
+           SELECT M.CLS_CD
+             FROM EQ0201M M
+         	JOIN EQ_TP N ON M.PRNT_CLS_CD = N.CLS_CD
+         ),
+         EQ_LOC
+         AS (
+             SELECT CLS_CD
+         	FROM EQ0201M
+            WHERE CLS_CD IN (${eqNo})
+              AND EQ_CLS = 'EQ_LOC'
+              AND REV_NO = #{revNo}
+            UNION ALL
+           SELECT M.CLS_CD
+             FROM EQ0201M M
+         	JOIN EQ_LOC N ON M.PRNT_CLS_CD = N.CLS_CD
+         )
+         </if>
+        SELECT X.CHK_NO
+             , X.CHK_NM
+             , Y.EQ_NO
+             , Y.EQ_NM
+             , X.USE_AMT
+             , X.UNIT_CD
+             , CONVERT(VARCHAR,ISNULL(X.USE_AMT,'0'))  + ' ' + (SELECT UNIT_NM FROM CO0401M WHERE UNIT_CD = X.UNIT_CD) UNIT_NM
+             , X.ORG_CD
+             , dbo.FN_NAME(X.ORG_CD, 'DEPT') ORG_CD_DESC
+             , X.CMMNT
+             , dbo.FN_NAME(X.CHK_DIV, 'CHK_DIV') CHK_DIV_NM
+             , X.CHK_DIV
+             , X.EQ_NO
+             , X.GRP_YN
+             , Y.EQ_STS
+          FROM IN0201M X
+		 INNER JOIN EQ0101M Y ON (Y.EQ_NO = X.EQ_NO)
+         WHERE REV_NO = #{revNo}
+         <if test="eqNo != null &amp;&amp; eqNo != ''">
+           <if test="eqClsDiv == 'EQ_TP'">
+            AND EQ_TP IN (
+                SELECT CLS_CD FROM EQ_TP
+                )
+           </if>
+           <if test="eqClsDiv == 'EQ_LOC'">
+            AND EQ_LOC IN (
+                  SELECT CLS_CD FROM EQ_LOC
+                )
+           </if>
+           <if test="eqClsDiv == 'EQ_PRCS'">
+            AND EQ_PRCS IN (
+                  SELECT CLS_CD FROM EQ_PRCS
+                )
+           </if>
+           <if test="eqClsDiv == 'EQ_MY'">
+            AND EQ_PRCS IN (
+                   SELECT EQ_PRCS
+                    FROM EQ0101M
+                   WHERE REV_NO = #{revNo}
+                     AND EQ_NO IN (${eqNo})
+                )
+            AND X.EQ_NO IN (SELECT EQ_NO FROM EQ0101P WHERE USE_YN = 'Y' AND USER_ID = #{userId})
+           </if>
+         </if>
+        <if test="feqNo != null &amp;&amp; feqNo != ''">
+           AND EXISTS (
+               SELECT 1
+                 FROM EQ0101M J
+                WHERE J.EQ_NO = X.EQ_NO
+                  AND J.REV_NO = #{revNo}
+                  AND UPPER(J.EQ_NO) = UPPER(#{feqNo})
+               )
+        </if>
+        <if test="fchkNo != null &amp;&amp; fchkNo != ''">
+           AND X.CHK_NO = #{fchkNo}
+        </if>
+        <if test="pchkNo != null &amp;&amp; pchkNo != ''">
+           AND x.CHK_NO IN (${pchkNo})
+        </if>
+        <if test="fchkNm != null &amp;&amp; fchkNm != ''">
+           AND UPPER(X.CHK_NM) LIKE '%' + UPPER(#{fchkNm}) + '%'
+        </if>
+        <if test="forgCd != null &amp;&amp; forgCd != ''">
+           AND UPPER(X.PLAN_ORG_CD) = UPPER(#{forgCd})
+        </if>
+           AND X.PM_TP  = 'U'
+           AND X.ACT_YN = 'Y'
+         ORDER BY CHK_NO DESC
+    </select>
+
+    <select id="retrieveIN0901Sub" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0901.retrieveIN0901Sub */ ]]>
+        SELECT
+               X.CHK_NO
+             , X.CHK_NM
+             , X.USE_AMT
+             , X.UNIT_CD
+             , CONVERT(VARCHAR,ISNULL(X.USE_AMT,'0'))  + ' ' + (SELECT UNIT_NM FROM CO0401M WHERE UNIT_CD = X.UNIT_CD) UNIT_NM
+             , X.EQ_NO
+             , Y.EQ_STS
+          FROM IN0201M X
+         INNER JOIN EQ0101M Y ON (Y.EQ_NO = X.EQ_NO)
+         WHERE 1=1
+        <if test='grpYn.equals("Y")'>
+           AND X.PM_TP = 'U'
+           AND X.ACT_YN = 'Y'
+           AND X.UNIT_CD = #{unitCd}
+           AND X.EQ_NO = #{eqNo}
+        </if>
+        <if test='!grpYn.equals("Y")'>
+           AND X.CHK_NO = #{chkNo}
+        </if>
+    </select>
+
+    <select id="retrieveIN0901Sub2" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0901.retrieveIN0901Sub2 */ ]]>
+        SELECT
+               X.USE_YMD
+             , X.USE_AMT
+             , X.WO_SUM
+             , X.TOT_SUM
+             , X.CHK_SCHD_NO
+             , X.UBM_NO
+             , X.CHK_NO
+          FROM IN0601M x
+         WHERE X.CHK_NO = #{chkNo}
+         <if test="fCheckStartDate != null &amp;&amp; fCheckStartDate != ''">
+           AND X.USE_YMD <![CDATA[ >= ]]> #{fCheckStartDate}
+         </if>
+         <if test="fCheckEndDate != null &amp;&amp; fCheckEndDate != ''">
+           AND X.USE_YMD <![CDATA[ <= ]]> #{fCheckEndDate}
+         </if>
+         ORDER BY X.USE_YMD DESC
+    </select>
+
+     <select id="retrieveIN0901ListPopGroupY" parameterType="map" resultType="map" >
+         <![CDATA[ /* in0901.retrieveIN0901ListPopGroupY */ ]]>
+         WITH LAST_UBM_INFO AS (
+                                SELECT #{eqNo} EQ_NO
+                                     , #{unitCd} UNIT_CD
+                                     , MAX(A.USE_YMD) MAX_USE_YMD
+                                  FROM IN0601M A, IN0201M B
+                                 WHERE A.CHK_NO   = B.CHK_NO
+                                   AND B.EQ_NO   = #{eqNo}
+                                   AND B.UNIT_CD = #{unitCd}
+                                   AND B.ACT_YN  = 'Y'
+                                )
+           , EXT_UBM_INFO AS (
+                               SELECT #{eqNo} EQ_NO
+                                    , #{unitCd} UNIT_CD
+                                    , MAX(A.USE_YMD) EXT_USE_YMD
+                                 FROM IN0601M A, IN0201M B, LAST_UBM_INFO C
+                                WHERE A.CHK_NO   = B.CHK_NO
+                                  AND B.EQ_NO   = C.EQ_NO
+                                  AND B.UNIT_CD = C.UNIT_CD
+                                  AND A.USE_YMD <![CDATA[ < ]]> C.MAX_USE_YMD
+                                  AND B.ACT_YN  = 'Y'
+                               )
+            SELECT X.MAX_USE_YMD
+                 , (SELECT MAX(A.TOT_SUM)
+                      FROM IN0601M A, IN0201M B
+                      WHERE A.CHK_NO   = B.CHK_NO
+                        AND B.EQ_NO   = X.EQ_NO
+                        AND B.UNIT_CD = X.UNIT_CD
+                        AND B.ACT_YN  = 'Y'
+                        AND A.USE_YMD = X.MAX_USE_YMD) MAX_TOT_SUM
+                 , ISNULL( (SELECT TOP 1 'N'
+                           FROM IN0601M A, IN0201M B
+                          WHERE A.CHK_NO   = B.CHK_NO
+                            AND B.EQ_NO   = X.EQ_NO
+                            AND B.UNIT_CD = X.UNIT_CD
+                            AND A.USE_YMD <![CDATA[ >= ]]> X.MAX_USE_YMD
+                            AND A.CHK_SCHD_NO IS NOT NULL
+                            AND B.ACT_YN = 'Y'), 'Y') IS_MODIFY
+              FROM LAST_UBM_INFO X
+            UNION ALL
+            SELECT X.EXT_USE_YMD
+                 , (SELECT MAX(A.TOT_SUM)
+                      FROM IN0601M A, IN0201M B
+                     WHERE A.CHK_NO = B.CHK_NO
+                       AND B.EQ_NO = X.EQ_NO
+                       AND B.UNIT_CD = X.UNIT_CD
+                       AND B.ACT_YN  = 'Y'
+                       AND A.USE_YMD = X.EXT_USE_YMD) EXT_TOT_SUM
+                 , ISNULL((SELECT TOP 1 'N'
+                          FROM IN0601M A, IN0201M B
+                         WHERE A.CHK_NO = B.CHK_NO
+                           AND B.EQ_NO = X.EQ_NO
+                           AND B.UNIT_CD = X.UNIT_CD
+                           AND A.USE_YMD <![CDATA[ >= ]]> X.EXT_USE_YMD
+                           AND A.CHK_SCHD_NO IS NOT NULL
+                           AND B.ACT_YN = 'Y'), 'Y') IS_MODIFY
+              FROM EXT_UBM_INFO X
+    </select>
+
+    <select id="retrieveIN0901ListPopGroupN" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0901.retrieveIN0901ListPopGroupN */ ]]>
+        WITH LAST_UBM_INFO AS (
+                     SELECT #{chkNo} CHK_NO
+                          , MAX(A.USE_YMD) MAX_USE_YMD
+                       FROM IN0601M A
+                      WHERE A.CHK_NO = #{chkNo}
+                     )
+                , EXT_UBM_INFO AS (
+                     SELECT #{chkNo} CHK_NO
+                          , MAX(A.USE_YMD) EXT_USE_YMD
+                       FROM IN0601M A, LAST_UBM_INFO C
+                      WHERE A.CHK_NO = #{chkNo}
+                        AND A.USE_YMD <![CDATA[ < ]]> C.MAX_USE_YMD
+                    )
+        SELECT X.MAX_USE_YMD
+             , (SELECT MAX(A.TOT_SUM)
+                  FROM IN0601M A
+                 WHERE A.CHK_NO = X.CHK_NO
+                   AND A.USE_YMD = X.MAX_USE_YMD) MAX_TOT_SUM
+             , ISNULL( (SELECT TOP 1 'N'
+                       FROM IN0601M A
+                      WHERE A.CHK_NO = X.CHK_NO
+                        AND A.USE_YMD <![CDATA[ >= ]]> X.MAX_USE_YMD
+                        AND A.CHK_SCHD_NO IS NOT NULL), 'Y') IS_MODIFY
+          FROM LAST_UBM_INFO X
+         UNION ALL
+        SELECT X.EXT_USE_YMD
+             , (SELECT MAX(A.TOT_SUM)
+                  FROM IN0601M A
+                 WHERE A.CHK_NO = X.CHK_NO
+                   AND A.USE_YMD = X.EXT_USE_YMD) EXT_TOT_SUM
+             , ISNULL( (SELECT TOP 1 'N'
+                       FROM IN0601M A
+                      WHERE A.CHK_NO = X.CHK_NO
+                        AND A.USE_YMD <![CDATA[ >= ]]> X.EXT_USE_YMD
+                        AND A.CHK_SCHD_NO IS NOT NULL), 'Y') IS_MODIFY
+          FROM EXT_UBM_INFO X
+    </select>
+
+    <select id="retrieveIN0901UpdateListPopGroupY" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0901.retrieveIN0901UpdateListPopGroupY */ ]]>
+        WITH LAST_UBM_INFO AS ( SELECT #{eqNo} EQ_NO
+                                     , #{unitCd} UNIT_CD
+                                     , MAX(A.USE_YMD) MAX_USE_YMD
+                                  FROM IN0601M A, IN0201M B
+                                 WHERE A.CHK_NO = B.CHK_NO
+                                   AND B.ACT_YN = 'Y'
+                                   AND B.EQ_NO = #{eqNo}
+                                   AND B.UNIT_CD = #{unitCd}
+                               )
+                                SELECT A.UBM_NO
+                                  FROM LAST_UBM_INFO X, IN0601M A, IN0201M B
+                                 WHERE A.CHK_NO = B.CHK_NO
+                                   AND B.EQ_NO = X.EQ_NO
+                                   AND B.UNIT_CD = X.UNIT_CD
+                                   AND A.USE_YMD = X.MAX_USE_YMD
+                                   AND B.ACT_YN = 'Y'
+    </select>
+
+    <select id="retrieveIN0901UpdateListPopGroupN" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0901.retrieveIN0901ListPopGroupN */ ]]>
+        WITH LAST_UBM_INFO AS ( SELECT #{chkNo} CHK_NO
+                                      , MAX(A.USE_YMD) MAX_USE_YMD
+                                  FROM IN0601M A
+                                 WHERE A.CHK_NO = #{chkNo}
+                              )
+                                SELECT A.UBM_NO
+                                  FROM LAST_UBM_INFO X, IN0601M A
+                                 WHERE A.CHK_NO = X.CHK_NO
+                                   AND A.USE_YMD = X.MAX_USE_YMD
+    </select>
+
+    <insert id="insertIN0901ListPop" parameterType="map" >
+        <![CDATA[ /* in0901.insertIN0901ListPop */ ]]>
+        INSERT INTO IN0601M (
+               UBM_NO
+             , CHK_NO
+             , USE_YMD
+             , TOT_SUM
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{ubmNo}
+             , #{chkNo}
+             , #{useYmd}
+             , #{totSum}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <update id="updateIN0901ListPop" parameterType="map" >
+        <![CDATA[ /* in0901.updateIN0901ListPop */ ]]>
+        UPDATE IN0601M
+          SET
+              USE_AMT = ISNULL( (SELECT CASE WHEN SIGN(TOT_SUM - A.TOT_SUM) = -1 THEN 0 ELSE TOT_SUM - A.TOT_SUM END
+                               FROM IN0601M A
+                              WHERE CHK_NO = A.CHK_NO
+                                AND A.USE_YMD = ( SELECT MAX(B.USE_YMD)
+                                                    FROM IN0601M B
+                                                   WHERE B.USE_YMD <![CDATA[ < ]]> USE_YMD
+                                                     AND CHK_NO = B.CHK_NO
+                                                 )
+                           ), TOT_SUM )
+            , WO_SUM = ISNULL( (SELECT CASE WHEN SIGN(A.WO_SUM + TOT_SUM - A.TOT_SUM) = -1 THEN 0 ELSE A.WO_SUM + TOT_SUM - A.TOT_SUM END
+                                FROM IN0601M A
+                               WHERE CHK_NO = A.CHK_NO
+                                 AND A.USE_YMD = ( SELECT MAX(B.USE_YMD)
+                                                     FROM IN0601M B
+                                                    WHERE B.USE_YMD <![CDATA[ < ]]> USE_YMD
+                                                      AND CHK_NO = B.CHK_NO
+                                                 )
+                            ), TOT_SUM )
+            , FNL_EDIT_DT    = GETDATE()
+            , FNL_EDIT_USER_ID = #{fnlEditUserId}
+        WHERE UBM_NO = #{ubmNo}
+    </update>
+
+    <update id="updateIN0901ListPop2" parameterType="map" >
+        <![CDATA[ /* in0901.updateIN0901ListPop2 */ ]]>
+        UPDATE IN0601M
+          SET
+              USE_YMD = #{useYmd}
+            , TOT_SUM = #{totSum}
+            , FNL_EDIT_DT    = GETDATE()
+            , FNL_EDIT_USER_ID = #{fnlEditUserId}
+        WHERE UBM_NO = #{ubmNo}
+    </update>
+
+    <update id="updateIN0901WoUbmNo" parameterType="map" >
+        <![CDATA[ /* in0901.updateIN0901WoUbmNo */ ]]>
+         UPDATE IN0601M
+           SET
+               CHK_SCHD_NO            = #{chkSchdNo}
+             , FNL_EDIT_DT    = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE UBM_NO = #{ubmNo}
+    </update>
+
+    <insert id="insertIN0401" parameterType="map" >
+        <![CDATA[ /* in0901.insertIN0401 */ ]]>
+        INSERT INTO IN0401M (
+               CHK_SCHD_NO
+             , CHK_NO
+             , CHK_YYYY
+             , WEEK_CNT
+             , CMPLT_YN
+             , CMPL_YMD
+             , ACTL_YMD
+             , DAY_WEEK
+             , UNCHK_YN
+             , CMMNT
+             , FST_REG_USER_ID
+             , FST_REG_DT
+             , FNL_EDIT_USER_ID
+             , FNL_EDIT_DT
+        )
+        VALUES (
+               #{chkSchdNo}
+             , #{chkNo}
+             , NULL
+             , NULL
+             , 'N'
+             , NULL
+             , CONVERT(VARCHAR, GETDATE() + 1, 23)
+             , NULL
+             , 'N'
+             , NULL
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+             , GETDATE()
+        )
+    </insert>
+
+    <update id="updateIN0901ChkSchdNo" parameterType="map" >
+        <![CDATA[ /* in0901.updateIN0901ChkSchdNo */ ]]>
+        UPDATE IN0601M
+          SET
+              CHK_SCHD_NO = #{chkSchdNo}
+            , FNL_EDIT_DT    = GETDATE()
+            , FNL_EDIT_USER_ID = #{fnlEditUserId}
+        WHERE UBM_NO = #{ubmNo}
+    </update>
+
+
+</mapper>

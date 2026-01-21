@@ -1,0 +1,653 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : 점검일정 생성
+* Description : 점검일정 생성
+* Author : jit13
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveIN0301    : 점검일정 생성 조회
+*************************************************************************************-->
+<mapper namespace="mt0201">
+    <!-- 점검일정 생성 조회 -->
+    <select id="retrieveMT0201" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0201.retrieveMT0201 */ ]]>
+        SELECT Y.EQ_NO
+             , Y.EQ_NM
+             , X.COMPANY_CD
+             , X.PM_NO
+             , X.PM_NM
+             , X.PLAN_ORG_CD ORG_CD
+             , dbo.FN_NAME(X.PLAN_ORG_CD, 'DEPT') ORG_CD_DESC
+             , X.CYCLE_CD
+             , X.CYCLE_TP
+             , (X.CYCLE_CD + ' ' + dbo.FN_NAME(X.CYCLE_TP, 'PERIOD_TYPE')) CYCLE_DESC
+             , X.EQ_NO
+        <foreach collection="selectYmdList" item="selectYmdList" open="" separator="" close="">
+             , ISNULL((SELECT COUNT(PM_NO) FROM MT0201M WHERE COMPANY_CD = X.COMPANY_CD AND PM_NO = X.PM_NO AND SUBSTRING(REPLACE(PLAN_START_YMD,'-',''),0,7) = #{selectYmdList.selectYmd} AND SUBSTRING(REPLACE(PLAN_END_YMD,'-',''),0,7) = #{selectYmdList.selectYmd} GROUP BY PM_NO),0) A_${selectYmdList.selectYmd}
+        </foreach>
+          FROM MT0101M X, EQ0101M Y
+         WHERE X.EQ_NO   = Y.EQ_NO
+           AND X.COMPANY_CD = Y.COMPANY_CD
+           AND Y.REV_NO  = #{revNo}
+           AND X.PM_TP   = 'T'
+           AND X.ACT_YN  = 'Y'
+           AND X.COMPANY_CD  = #{companyCd}
+        <if test="feqNo != null &amp;&amp; feqNo != ''">
+          <if test='fchildYn.equals("Y")' >
+           AND X.EQ_NO IN (
+                SELECT EQ_NO
+                  FROM EQ0101M
+                 WHERE REV_NO = #{revNo}
+                   AND COMPANY_CD = #{companyCd}
+                 START WITH ITEM_NO = #{feqNo}
+               CONNECT BY PRIOR EQ_NO  = EQ_PRCS
+                      AND PRIOR REV_NO = #{revNo}
+               )
+          </if>
+          <if test='fchildYn.equals("N")' >
+           AND X.EQ_NO =  #{feqNo}
+          </if>
+        </if>
+        <if test="pmNoS != null &amp;&amp; pmNoS != ''">
+           AND X.PM_NO IN (${pmNoS})
+        </if>
+        <if test="fpmNo != null &amp;&amp; fpmNo != ''">
+           AND X.PM_NO = #{fpmNo}
+        </if>
+        <if test="ppmNo != null &amp;&amp; ppmNo != ''">
+           AND x.PM_NO IN (${ppmNo})
+        </if>
+        <if test="fpmNm != null &amp;&amp; fpmNm != ''">
+           AND UPPER(X.PM_NM) LIKE '%' + UPPER(#{fpmNm}) + '%'
+        </if>
+        <if test="forgCd != null &amp;&amp; forgCd != ''">
+           AND EXISTS (
+               SELECT 1
+                 FROM WO0201M
+                WHERE ORG_CD = #{forgCd}
+                  AND COMPANY_CD = #{companyCd}
+               )
+        </if>
+        <if test="fcycleCd != null &amp;&amp; fcycleCd != ''">
+           AND X.CYCLE_CD = #{fcycleCd}
+        </if>
+        <if test="fcycleTp != null &amp;&amp; fcycleTp != ''">
+           AND X.CYCLE_TP = #{fcycleTp}
+        </if>
+         ORDER BY Y.ITEM_NO, X.PM_NO
+    </select>
+
+     <select id="retrieveMT0201ListPlan" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0201.retrieveMT0201ListPlan */ ]]>
+        SELECT
+               X.PLAN_START_YMD
+             , X.PLAN_END_YMD
+             , A.WO_STS
+             , A.WO_NO
+             , A.START_YMD
+             , A.END_YMD
+             , X.PM_SCHDL_NO
+             , X.PM_NO
+             , X.COMPANY_CD
+          FROM MT0201M X
+          LEFT OUTER JOIN WO0201M A ON A.WO_NO = X.WO_NO AND A.COMPANY_CD = X.COMPANY_CD
+         WHERE 1=1
+           AND X.PM_NO = #{pmNo}
+           AND X.COMPANY_CD = #{companyCd}
+           AND X.PLAN_START_YMD <![CDATA[ >= ]]> #{fStartDate}
+           AND X.PLAN_START_YMD <![CDATA[ <= ]]> #{fEndDate}
+         ORDER BY X.PLAN_START_YMD ASC
+    </select>
+
+    <insert id="saveMT0201ListPlanYmd" parameterType="map" >
+        <![CDATA[ /* mt0201.saveMT0201ListPlanYmd */ ]]>
+        INSERT INTO MT0201M (
+               PM_SCHDL_NO
+             , COMPANY_CD
+             , PM_NO
+             , PLAN_START_YMD
+             , PLAN_END_YMD
+             , WEEK_CNT
+             , DAY_WEEK
+             , PM_YYYY
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               NEXT VALUE FOR DBO.SQMT_PM_SCHEDULE_NO
+             , #{companyCd}
+             , #{pmNo}
+             , #{planStartYmd}
+             , #{planEndYmd}
+             , CONVERT(CHAR, DATEPART(WEEK, CONVERT(CHAR(8),CONVERT(DATE,#{planStartYmd}),112)))
+			 , CASE DATEPART(WEEKDAY,CONVERT(DATE,#{planStartYmd})) WHEN '1' THEN 'SUN' WHEN '2' THEN 'MON' WHEN '3' THEN 'TUE' WHEN '4' THEN 'WED' WHEN '5' THEN 'THU' WHEN '6' THEN 'FRI' ELSE'SAT' END
+             , SUBSTRING(REPLACE(#{planStartYmd},'-',''),0,5)
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <update id="updateMT0201ListPlanYmd" parameterType="map" >
+        <![CDATA[ /* mt0201.updateMT0201ListPlanYmd */ ]]>
+         UPDATE MT0201M
+           SET
+               PLAN_START_YMD   = #{planStartYmd}
+             , PLAN_END_YMD     = #{planEndYmd}
+             , WEEK_CNT         = CONVERT(CHAR, DATEPART(WEEK, CONVERT(CHAR(8),CONVERT(DATE,#{planStartYmd}),112)))
+             , PM_YYYY          = SUBSTRING(REPLACE(#{planStartYmd},'-',''),0,5)
+             , DAY_WEEK         = CASE DATEPART(WEEKDAY,CONVERT(DATE,#{planStartYmd})) WHEN '1' THEN 'SUN' WHEN '2' THEN 'MON' WHEN '3' THEN 'TUE' WHEN '4' THEN 'WED' WHEN '5' THEN 'THU' WHEN '6' THEN 'FRI' ELSE'SAT' END
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE PM_SCHDL_NO      = #{pmSchdlNo}
+           AND COMPANY_CD       = #{companyCd}
+    </update>
+
+    <update id="updateMT0201ListWoPlanYmd" parameterType="map" >
+        <![CDATA[ /* mt0201.updateMT0201ListWoPlanYmd */ ]]>
+        UPDATE WO0201M
+           SET
+               PLAN_START_YMD   = #{planStartYmd}
+             , PLAN_END_YMD     = #{planEndYmd}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE WO_NO            = #{woNo}
+           AND COMPANY_CD       = #{companyCd}
+    </update>
+
+    <delete id="delMT0201ListPlanYmd" parameterType="map" >
+         <![CDATA[ /* mt0201.delMT0201ListPlanYmd */ ]]>
+         DELETE
+           FROM MT0201M
+          WHERE PM_SCHDL_NO = #{pmSchdlNo}
+            AND COMPANY_CD  = #{companyCd}
+    </delete>
+
+    <select id="findCheckInfoMT0201" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0201.findCheckInfoMT0201 */ ]]>
+        SELECT X.PM_NO
+             , X.COMPANY_CD
+             , X.CAL_CD
+             , X.CAL_CD
+             , X.CYCLE_CD
+             , X.CYCLE_TP
+             , X.PM_HOUR
+             , ISNULL((SELECT MAX(ISNULL(B.END_YMD, B.PLAN_END_YMD))
+                      FROM MT0201M A, WO0201M B
+                     WHERE A.PM_NO = X.PM_NO
+                       AND A.WO_NO = B.WO_NO
+                       AND A.COMPANY_CD = B.COMPANY_CD
+                       AND A.COMPANY_CD = #{companyCd}
+                       AND A.WO_NO IS NOT NULL), ISNULL(LAST_PM_YMD, #{fStartDate})) LAST_PM_YMD
+             , X.DAY_WEEK
+          FROM MT0101M X
+         WHERE X.PM_NO  = #{pmNo}
+           AND X.COMPANY_CD  = #{companyCd}
+           AND X.PM_TP  = 'T'
+           AND X.ACT_YN = 'Y'
+    </select>
+
+    <select id="findWorkingDay" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0201.findWorkingDay */ ]]>
+        SELECT MIN(EXPORT_YMD)
+          FROM MT0301D
+         WHERE CAL_CD = #{calCd}
+           AND COMPANY_CD = #{companyCd}
+           AND WORK_YN = 'Y'
+           AND EXPORT_YMD > #{checkDate}
+    </select>
+
+    <delete id="createBeforeDeleteMT0201List" parameterType="map" >
+        <![CDATA[ /* mt0201.createBeforeDeleteMT0201List */ ]]>
+        DELETE
+          FROM MT0201M
+         WHERE PM_NO = #{pmNo}
+           AND COMPANY_CD = #{companyCd}
+           AND PLAN_START_YMD <![CDATA[ >= ]]> #{fStartDate}
+           AND PLAN_END_YMD <![CDATA[ <= ]]> #{fEndDate}
+           AND (WO_NO IN (SELECT A.WO_NO
+                           FROM MT0201M A
+                           LEFT OUTER JOIN WO0201M B ON (A.WO_NO = B.WO_NO AND A.COMPANY_CD = B.COMPANY_CD)
+                          WHERE A.PM_NO = #{pmNo}
+                            AND A.COMPANY_CD = #{companyCd}
+                            AND A.PLAN_START_YMD <![CDATA[ >= ]]> #{fStartDate}
+                            AND A.PLAN_END_YMD <![CDATA[ <= ]]> #{fEndDate}
+                            AND (B.WO_STS != 'YZ')) OR WO_NO IS NULL
+                )
+    </delete>
+
+    <select id="checkPlanDate" parameterType="map">
+        <![CDATA[ /* mt0201.checkPlanDate */ ]]>
+        SELECT '1'
+          FROM MT0201M
+         WHERE PM_NO = #{pmNo}
+           AND COMPANY_CD = #{companyCd}
+           AND REPLACE(PLAN_START_YMD,'-','') <![CDATA[ >= ]]> #{fStartDate}
+           AND REPLACE(PLAN_START_YMD,'-','') <![CDATA[ <= ]]> #{fEndDate}
+    </select>
+
+    <select id="findPmScheduleInfo" parameterType="map">
+        <![CDATA[ /* mt0201.findPmScheduleInfo */ ]]>
+        SELECT PM_NO
+             , COMPANY_CD
+             , PLAN_START_YMD
+             , PLAN_END_YMD
+             , WO_NO
+             , PM_SCHDL_NO
+          FROM MT0201M
+         WHERE PM_SCHDL_NO = #{pmSchdlNo}
+           AND COMPANY_CD  = #{companyCd}
+    </select>
+
+    <insert id="insertWorkOrder" parameterType="map" >
+        <![CDATA[ /* mt0201.insertWorkOrder */ ]]>
+        INSERT INTO WO0201M (
+               WO_NO
+             , COMPANY_CD
+             , WO_TP
+             , WO_STS
+             , WO_NM
+             , WO_GRD
+             , WO_DIV
+             , PRIOR_CD
+             , PLAN_START_YMD
+             , PLAN_END_YMD
+             , PLAN_START_TIME
+             , PLAN_END_TIME
+             , WORK_CNDT_CD
+             , WORK_CNDT_HOUR
+             , EQ_NO
+             , EQ_GRD
+             , PLAN_ORG_CD
+             , WORK_DESC
+             , PM_NO
+             , DEVICE_TP
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        SELECT
+               #{woNo}
+             , COMPANY_CD
+             , 'WT03'
+             , 'BA'
+             , '[PM] '  +  PM_NM
+             , WO_GRD
+             , 'MT0201'
+             , PRIOR_CD
+             , #{planStartYmd}
+             , #{planEndYmd}
+             , '08:00'
+             , '17:00'
+             , WORK_CNDT_CD
+             , WORK_CNDT_HOUR
+             , EQ_NO
+             , (SELECT EQ_GRD FROM EQ0101M WHERE EQ_NO = M.EQ_NO AND COMPANY_CD = #{companyCd})
+             , PLAN_ORG_CD
+             , WORK_DESC
+             , PM_NO
+             , 'PC'
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+          FROM MT0101M M
+         WHERE PM_NO  = #{pmNo}
+           AND COMPANY_CD = #{companyCd}
+           AND ACT_YN = 'Y'
+    </insert>
+
+    <insert id="insertWorkParts" parameterType="map" >
+        <![CDATA[ /* mt0201.insertWorkParts */ ]]>
+        INSERT INTO WO0201P (
+               WO_NO
+             , COMPANY_CD
+             , PART_CD
+             , USE_QTY
+             , UNIT_COST
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        SELECT
+               #{woNo}
+             , COMPANY_CD
+             , PART_CD
+             , USE_QTY
+             , UNIT_COST
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+          FROM MT0102P
+         WHERE PM_NO = #{pmNo}
+           AND COMPANY_CD = #{companyCd}
+    </insert>
+
+    <insert id="insertWorkJob" parameterType="map" >
+        <![CDATA[ /* mt0201.insertWorkJob */ ]]>
+        INSERT INTO WO0203J (
+               PLAN_JOB_NO
+             , COMPANY_CD
+             , WORK_DESC
+             , CMMNT
+             , SEQ_NO
+             , WO_NO
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        SELECT
+               NEXT VALUE FOR DBO.SQMT_PLAN_JOB_NO
+             , COMPANY_CD
+             , WORK_NM
+             , CMMNT
+             , SEQ_NO
+             , #{woNo}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+          FROM MT0102J
+        WHERE PM_NO = #{pmNo}
+          AND COMPANY_CD = #{companyCd}
+    </insert>
+
+    <insert id="insertWorkCraft" parameterType="map" >
+        <![CDATA[ /* mt0201.insertWorkCraft */ ]]>
+        INSERT INTO WO0203C (
+               PLAN_OCCPT_NO
+             , COMPANY_CD
+             , WORK_HOUR
+             , OCCPT_CD
+             , SEQ_NO
+             , WORK_USER_ID
+             , IN_OUT_DIV
+             , USER_COST
+             , WO_NO
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        SELECT
+               NEXT VALUE FOR DBO.SQMT_PLAN_CRAFT_NO
+             , COMPANY_CD
+             , WORK_HOUR
+             , OCCPT_CD
+             , SEQ_NO
+             , WORK_USER_ID
+			 , IN_OUT_DIV
+			 , USER_COST
+             , #{woNo}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+          FROM MT0102C X
+         WHERE PM_NO = #{pmNo}
+           AND COMPANY_CD = #{companyCd}
+    </insert>
+
+    <update id="updatePrePmDate" parameterType="map" >
+        <![CDATA[ /* mt0201.updatePrePmDate */ ]]>
+        UPDATE MT0101M
+           SET
+               PREV_PM_YMD      = #{planStartYmd}
+             <if test="lastPmYmd != null &amp;&amp; lastPmYmd != ''">
+             , LAST_PM_YMD      = #{lastPmYmd}
+             </if>
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE PM_NO = #{pmNo}
+           AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <update id="updatePmSchdWoNo" parameterType="map" >
+        <![CDATA[ /* mt0201.updatePmSchdWoNo */ ]]>
+        UPDATE MT0201M
+           SET
+               WO_NO            = #{woNo}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE PM_SCHDL_NO    = #{pmSchdlNo}
+           AND COMPANY_CD     = #{companyCd}
+    </update>
+
+    <!-- 전체일정생성 -->
+    <insert id="saveMT0201AllListplan" parameterType="map" >
+        <![CDATA[ /* mt0201.saveMT0201AllListplan */ ]]>
+        INSERT INTO MT0201M (
+               PM_SCHDL_NO
+             , COMPANY_CD
+             , PM_NO
+             , PLAN_START_YMD
+             , PLAN_END_YMD
+             , WEEK_CNT
+             , DAY_WEEK
+             , PM_YYYY
+             , WO_NO
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{pmSchdlNo}
+             , #{companyCd}
+             , #{pmNo}
+             , CONVERT(VARCHAR, CONVERT(DATE,#{fStartDate}))
+             , CONVERT(VARCHAR, CONVERT(DATE,#{fEndDate}))
+             , CONVERT(CHAR, DATEPART(WEEK, CONVERT(CHAR(8),CONVERT(DATE,#{fStartDate}),112)))
+             , CASE DATEPART(WEEKDAY,CONVERT(DATE,#{fStartDate})) WHEN '1' THEN 'SUN' WHEN '2' THEN 'MON' WHEN '3' THEN 'TUE' WHEN '4' THEN 'WED' WHEN '5' THEN 'THU' WHEN '6' THEN 'FRI' ELSE'SAT' END
+             , SUBSTRING(REPLACE(#{fStartDate},'-',''),0,5)
+             , #{woNo}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <!-- 예방정비일정 2주전 W/O 생성 안된 목록 가져오기  -->
+    <select id="retrieveMT0201MakeWoList" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0201.retrieveMT0201MakeWoList */ ]]>
+        <if test="feqNo != null &amp;&amp; feqNo != ''">
+        WITH EQNO AS (
+            SELECT EQ_NO, COMPANY_CD
+        	FROM EQ0101M
+        	WHERE REV_NO = #{revNo}
+        	  AND ITEM_NO = #{feqNo}
+        	  AND COMPANY_CD = #{companyCd}
+        	UNION ALL
+        	SELECT M.EQ_NO, M.COMPANY_CD
+        	FROM EQ0101M M
+        	JOIN EQNO N ON (M.PRNT_EQ_NO= N.EQ_NO AND M.COMPANY_CD = N.COMPANY_CD)
+        )
+        </if>
+        SELECT X.PLAN_START_YMD
+             , X.PLAN_END_YMD
+             , X.COMPANY_CD
+             , X.PM_NO
+             , X.PM_SCHDL_NO
+             , E.EQ_STS
+          FROM MT0201M X
+		  LEFT OUTER JOIN WO0201M Y ON (Y.WO_NO = X.WO_NO AND Y.COMPANY_CD = X.COMPANY_CD)
+		 INNER JOIN MT0101M Z ON (Z.PM_NO = X.PM_NO AND Z.COMPANY_CD = X.COMPANY_CD)
+		 INNER JOIN EQ0101M E ON (E.EQ_NO = Z.EQ_NO AND E.COMPANY_CD = Z.COMPANY_CD)
+         WHERE Z.PM_TP  = 'T'
+           AND Z.ACT_YN = 'Y'
+           AND E.REV_NO = #{revNo}
+           AND X.COMPANY_CD = #{companyCd}
+           AND Y.WO_NO IS NULL
+           AND X.PM_SCHDL_NO IS NOT NULL
+           AND X.PLAN_START_YMD <![CDATA[ >= ]]> GETDATE()
+           AND X.PLAN_START_YMD <![CDATA[ <= ]]> CONVERT(VARCHAR, GETDATE() +14, 23)
+        <if test="feqNo != null &amp;&amp; feqNo != ''">
+          <if test='fchildYn.equals("Y")' >
+           AND Z.EQ_NO IN (
+                SELECT EQ_NO FROM EQNO
+               )
+          </if>
+          <if test='fchildYn.equals("N")' >
+           AND Z.EQ_NO =  #{feqNo}
+          </if>
+        </if>
+        <if test="fpmNo != null &amp;&amp; fpmNo != ''">
+           AND Z.PM_NO = #{fpmNo}
+        </if>
+        <if test="fpmNm != null &amp;&amp; fpmNm != ''">
+           AND UPPER(Z.PM_NM) LIKE '%' + UPPER(#{fpmNm}) + '%'
+        </if>
+        <if test="forgCd != null &amp;&amp; forgCd != ''">
+           AND EXISTS (
+               SELECT 1
+                 FROM WO0201M
+                WHERE ORG_CD = #{forgCd}
+                  AND COMPANY_CD = #{companyCd})
+
+        </if>
+        <if test="fcycleCd != null &amp;&amp; fcycleCd != ''">
+           AND Z.CYCLE_CD = #{fcycleCd}
+        </if>
+        <if test="fcycleTp != null &amp;&amp; fcycleTp != ''">
+          AND Z.CYCLE_TP = #{fcycleTp}
+        </if>
+        ORDER BY X.PLAN_START_YMD DESC
+    </select>
+
+    <!-- 날짜 가져오기  -->
+    <select id="retrieveMT0201Ymd" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0201.retrieveMT0201Ymd */ ]]>
+        WITH T AS (
+           SELECT 0 AS LEVEL
+        	UNION ALL
+           SELECT LEVEL + 1 FROM T WHERE LEVEL+1 <![CDATA[ <= ]]> DATEDIFF(mm,CONVERT(DATETIME, #{fStartDate}), CONVERT(DATETIME, #{fEndDate}))
+        )
+        SELECT CONVERT(CHAR(6), DATEADD(MONTH, LEVEL, CONVERT(datetime, #{fStartDate})), 112) SELECT_YMD FROM T
+     </select>
+
+ <!--  계획일 하루전으로 변경 W/O 미생성 대상만 적용  -->
+    <update id="moveDayMT0201" parameterType="map" >
+        <![CDATA[ /* mt0201.moveDayMT0201 */ ]]>
+         UPDATE MT0201M
+            SET
+                PLAN_START_YMD   = CONVERT(VARCHAR,DATEADD(dd, #{inputDays}, PLAN_START_YMD),23)
+              , PLAN_END_YMD     = CONVERT(VARCHAR,DATEADD(dd, #{inputDays}, PLAN_END_YMD),23)
+              , FNL_EDIT_DT      = GETDATE()
+              , FNL_EDIT_USER_ID = #{fnlEditUserId}
+          WHERE PM_NO = #{pmNo}
+            AND WO_NO IS NULL
+            AND COMPANY_CD = #{companyCd}
+            AND PLAN_START_YMD <![CDATA[ >= ]]> #{fStartDate}
+            AND PLAN_START_YMD <![CDATA[ <= ]]> #{fEndDate}
+    </update>
+
+ <!--  계획일 하루전으로 변경 W/O 미생성 대상만 적용  -->
+    <update id="moveDayMinusMT0201" parameterType="map" >
+        <![CDATA[ /* mt0201.moveDayMinusMT0201 */ ]]>
+         UPDATE MT0201M
+           SET
+               PLAN_START_YMD   = ${moveDaysFrom}
+             , PLAN_END_YMD     = ${moveDaysTo}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE PM_NO = #{pmNo}
+           AND WO_NO IS NULL
+           AND COMPANY_CD = #{companyCd}
+           AND PLAN_START_YMD <![CDATA[ >= ]]> #{fStartDate}
+           AND PLAN_START_YMD <![CDATA[ <= ]]> #{fEndDate}
+    </update>
+
+    <!-- 계획일 하루후로 변경 W/O 미생성 대상만 적용  -->
+    <update id="moveDayPlusMT0201" parameterType="map" >
+        <![CDATA[ /* mt0201.moveDayPlusMT0201 */ ]]>
+        UPDATE MT0201M
+           SET
+               PLAN_START_YMD   = ${moveDaysFrom}
+             , PLAN_END_YMD     = ${moveDaysTo}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE PM_NO = #{pmNo}
+           AND WO_NO IS NULL
+           AND COMPANY_CD = #{companyCd}
+           AND PLAN_START_YMD <![CDATA[ >= ]]> #{fStartDate}
+           AND PLAN_START_YMD <![CDATA[ <= ]]> #{fEndDate}
+    </update>
+
+    <select id="retrieveLastPmYmd" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0201.retrieveLastPmYmd */ ]]>
+        SELECT MAX(A.END_YMD) AS LAST_PM_YMD
+          FROM WO0201M A
+         WHERE A.PM_NO = #{pmNo}
+           AND A.COMPANY_CD = #{companyCd}
+           AND A.WO_STS = 'YZ'
+    </select>
+
+    <update id="updateCycleChangeYn" parameterType="map" >
+        <![CDATA[ /* mt0201.updateCycleChangeYn */ ]]>
+        UPDATE MT0101M
+           SET
+               CYCLE_CHANGE_YN   = #{cycleChangeYn}
+         WHERE PM_NO = #{fpmNo}
+           AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <delete id="deleteWO0201M" parameterType="map" >
+        <![CDATA[ /* mt0201.deleteWO0201M */ ]]>
+        DELETE
+        FROM WO0201M
+        WHERE WO_NO IN (SELECT WO_NO FROM MT0201M WHERE PM_NO = #{pmNo} AND COMPANY_CD = #{companyCd})
+          AND WO_STS != 'YZ'
+          AND COMPANY_CD = #{companyCd}
+          AND PLAN_START_YMD <![CDATA[ >= ]]> GETDATE()
+    </delete>
+
+    <delete id="deleteWoSubData" parameterType="map" >
+        <![CDATA[ /* mt0201.deleteWoSubData */ ]]>
+        DELETE
+          FROM WO0201P
+         WHERE WO_NO IN (SELECT WO_NO
+                           FROM WO0201M
+                          WHERE WO_NO IN (SELECT WO_NO FROM MT0201M WHERE PM_NO = #{pmNo} AND COMPANY_CD = #{companyCd})
+                            AND WO_STS != 'YZ'
+                            AND COMPANY_CD = #{companyCd}
+                            AND PLAN_START_YMD > GETDATE()
+                         )
+           AND COMPANY_CD = #{companyCd}
+
+        DELETE
+          FROM WO0203C
+         WHERE WO_NO IN (SELECT WO_NO
+                           FROM WO0201M
+                          WHERE WO_NO IN (SELECT WO_NO FROM MT0201M WHERE PM_NO = #{pmNo} AND COMPANY_CD = #{companyCd})
+                            AND WO_STS != 'YZ'
+                            AND COMPANY_CD = #{companyCd}
+                            AND PLAN_START_YMD > GETDATE()
+                         )
+           AND COMPANY_CD = #{companyCd}
+
+        DELETE
+          FROM WO0203J
+         WHERE WO_NO IN (SELECT WO_NO
+                           FROM WO0201M
+                          WHERE WO_NO IN (SELECT WO_NO FROM MT0201M WHERE PM_NO = #{pmNo} AND COMPANY_CD = #{companyCd})
+                            AND WO_STS != 'YZ'
+                            AND COMPANY_CD = #{companyCd}
+                            AND PLAN_START_YMD > GETDATE()
+                         )
+           AND COMPANY_CD = #{companyCd}
+
+    </delete>
+
+</mapper>

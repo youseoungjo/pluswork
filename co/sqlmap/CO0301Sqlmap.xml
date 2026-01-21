@@ -1,0 +1,431 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : Code
+* Description : 0301업코드
+* Author :
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveCO0301MList : 0301업코드목록 조회
+* insertCO0301M : 0301업코드목록 추가
+* updateCO0301M : 0301업코드목록 수정
+* deleteCO0301M : 0301업코드목록 삭제
+*************************************************************************************-->
+<mapper namespace="co0301">
+    <select id="retrieveCO0301MList" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0301.retrieveCO0301MList */ ]]>
+        SELECT
+               A.STD_NO
+             , A.STD_NM
+             , A.COMPANY_CD
+             , A.EQ_TP
+             , B.CLS_NM EQ_TP_NM
+             , A.USE_YN
+             , A.CMMNT
+             , A.FST_REG_DT
+             , A.FST_REG_USER_ID
+             , A.FNL_EDIT_DT
+             , A.FNL_EDIT_USER_ID
+          FROM CO0501M A
+		  LEFT OUTER JOIN EQ0201M B ON (B.CLS_CD = A.EQ_TP AND B.COMPANY_CD = A.COMPANY_CD)
+         WHERE B.REV_NO = #{revNo}
+           AND A.COMPANY_CD = #{companyCd}
+       <if test="stdNmS != null &amp;&amp; stdNmS != ''">
+           AND UPPER(A.STD_NM) LIKE '%'  +  UPPER(#{stdNmS})  +  '%'
+       </if>
+       <if test="stdNoS != null &amp;&amp; stdNoS != ''">
+           AND UPPER(A.STD_NO) LIKE '%'  +  UPPER(#{stdNoS})  +  '%'
+       </if>
+       <if test="useYnS != null &amp;&amp; useYnS != ''">
+           AND UPPER(A.USE_YN) LIKE '%'  +  UPPER(#{useYnS})  +  '%'
+       </if>
+       <if test="eqTp != null &amp;&amp; eqTp != ''">
+           AND UPPER(A.EQ_TP) LIKE '%'  +  UPPER(#{eqTp})  +  '%'
+       </if>
+         ORDER BY A.STD_NO
+    </select>
+
+    <select id="retrieveCO0301CList" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0301.retrieveCO0301CList */ ]]>
+        SELECT
+               A.STD_OCCPT_NO
+             , A.STD_NO
+             , A.COMPANY_CD
+             , A.WORK_USER_ID
+             , ISNULL(Z.USER_NM, C.TRADE_NM)   WORK_USER_NM
+             , A.USER_COST
+             , A.WORK_HOUR
+             , A.SEQ_NO
+             , A.IN_OUT_DIV
+             , A.FST_REG_DT
+             , A.FST_REG_USER_ID
+             , A.FNL_EDIT_DT
+             , A.FNL_EDIT_USER_ID
+          FROM CO0501C A
+          LEFT OUTER JOIN CO0601M C ON (C.TRADE_CD = A.WORK_USER_ID AND C.COMPANY_CD = A.COMPANY_CD)
+          LEFT OUTER JOIN SC_USER Z ON (A.WORK_USER_ID = Z.USER_ID AND A.COMPANY_CD = Z.COMPANY_CD)
+         WHERE A.STD_NO = #{stdNo}
+           AND A.COMPANY_CD = #{companyCd}
+         ORDER BY A.STD_OCCPT_NO
+    </select>
+
+    <select id="retrieveCO0301JList" parameterType="map" resultType="map" >
+       <![CDATA[ /* co0301.retrieveCO0301JList */ ]]>
+       SELECT
+              A.STD_JOB_NO
+            , A.COMPANY_CD
+            , A.WORK_NM
+            , A.STD_NO
+            , A.SEQ_NO
+            , A.CMMNT
+            , A.FST_REG_DT
+            , A.FST_REG_USER_ID
+            , A.FNL_EDIT_DT
+            , A.FNL_EDIT_USER_ID
+         FROM CO0501J A
+        WHERE A.STD_NO = #{stdNo}
+          AND A.COMPANY_CD = #{companyCd}
+        ORDER BY A.STD_JOB_NO
+    </select>
+
+    <select id="retrieveCO0301PList" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0301.retrieveCO0301PList */ ]]>
+          SELECT
+                 A.STD_PART_NO
+               , A.STD_NO
+               , A.COMPANY_CD
+               , A.PART_CD
+               , A.SEQ_NO
+               , A.USE_QTY
+               , A.UNIT_COST
+               , (A.UNIT_COST * USE_QTY) AS AMOUNT
+               , A.CMMNT
+               , A.FST_REG_DT
+               , A.FST_REG_USER_ID
+               , A.FNL_EDIT_DT
+               , A.FNL_EDIT_USER_ID
+            FROM CO0501P A
+           WHERE A.STD_NO = #{stdNo}
+             AND A.COMPANY_CD = #{companyCd}
+           ORDER BY A.STD_PART_NO
+    </select>
+
+    <insert id="insertCO0301M" parameterType="map" >
+        <![CDATA[ /* co0301.insertCO0301M */ ]]>
+        INSERT INTO CO0501M (
+               STD_NO
+             , STD_NM
+             , COMPANY_CD
+             , EQ_TP
+             , USE_YN
+             , CMMNT
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{stdNo}
+             , #{stdNm}
+             , #{companyCd}
+             , #{eqTp}
+             , #{useYn}
+             , #{cmmnt}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <insert id="insertCO0501C" parameterType="map" >
+        <![CDATA[ /* co0301.insertCO0501C */ ]]>
+        INSERT INTO CO0501C (
+               STD_OCCPT_NO
+             , STD_NO
+             , COMPANY_CD
+             , OCCPT_CD
+             , WORK_USER_ID
+             , USER_COST
+             , WORK_HOUR
+             , SEQ_NO
+             , IN_OUT_DIV
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{stdOccptNo}
+             , #{stdNo}
+             , #{companyCd}
+             , #{occptCd}
+             , #{workUserId}
+             , #{userCost}
+             , #{workHour}
+             , #{seqNo}
+             , #{inOutDiv}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <insert id="insertCO0501J" parameterType="map" >
+        <![CDATA[ /* co0301.insertCO0501J */ ]]>
+        INSERT INTO CO0501J (
+               STD_JOB_NO
+             , COMPANY_CD
+             , WORK_NM
+             , STD_NO
+             , SEQ_NO
+             , CMMNT
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{stdJobNo}
+             , #{companyCd}
+             , #{workNm}
+             , #{stdNo}
+             , #{seqNo}
+             , #{cmmnt}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <insert id="insertCO0501P" parameterType="map" >
+        <![CDATA[ /* co0301.insertCO0501P */ ]]>
+        INSERT INTO CO0501P (
+                STD_PART_NO
+              , COMPANY_CD
+              , PART_CD
+              , STD_NO
+              , SEQ_NO
+              , USE_QTY
+              , UNIT_COST
+              , CMMNT
+              , FST_REG_DT
+              , FST_REG_USER_ID
+              , FNL_EDIT_DT
+              , FNL_EDIT_USER_ID
+        )
+        VALUES (
+                #{stdPartNo}
+              , #{companyCd}
+              , #{partCd}
+              , #{stdNo}
+              , #{seqNo}
+              , #{useQty}
+              , #{unitCost}
+              , #{cmmnt}
+              , GETDATE()
+              , #{fstRegUserId}
+              , GETDATE()
+              , #{fnlEditUserId}
+        )
+    </insert>
+
+    <update id="updateCO0301M" parameterType="map" >
+        <![CDATA[ /* co0301.updateCO0301M */ ]]>
+        UPDATE CO0501M
+           SET STD_NM           = #{stdNm}
+             , EQ_TP            = #{eqTp}
+             , USE_YN           = #{useYn}
+             , CMMNT            = #{cmmnt}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE STD_NO = #{stdNo}
+           AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <update id="updateCO0501C" parameterType="map" >
+        <![CDATA[ /* co0301.updateCO0501C */ ]]>
+        UPDATE CO0501C
+           SET STD_NO           = #{stdNo}
+             , OCCPT_CD         = #{occptCd}
+             , WORK_USER_ID     = #{workUserId}
+             , USER_COST        = #{userCost}
+             , WORK_HOUR        = #{workHour}
+             , SEQ_NO           = #{seqNo}
+             , IN_OUT_DIV       = #{inOutDiv}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE STD_OCCPT_NO = #{stdOccptNo}
+           AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <update id="updateCO0501J" parameterType="map" >
+        <![CDATA[ /* co0301.updateCO0501J */ ]]>
+        UPDATE CO0501J
+           SET WORK_NM          = #{workNm}
+             , STD_NO           = #{stdNo}
+             , SEQ_NO           = #{seqNo}
+             , CMMNT            = #{cmmnt}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE STD_JOB_NO = #{stdJobNo}
+           AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <update id="updateCO0501P" parameterType="map" >
+        <![CDATA[ /* co0301.updateCO0501P */ ]]>
+        UPDATE CO0501P
+           SET STD_NO           = #{stdNo}
+             , PART_CD          = #{partCd}
+             , SEQ_NO           = #{seqNo}
+             , USE_QTY          = #{useQty}
+             , UNIT_COST        = #{unitCost}
+             , CMMNT            = #{cmmnt}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE STD_PART_NO = #{stdPartNo}
+           AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <delete id="deleteCO0301M" parameterType="map" >
+        <![CDATA[ /* co0301.deleteCO0301M */ ]]>
+        DELETE
+          FROM CO0501M
+         WHERE STD_NO = #{stdNo}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+
+    <delete id="deleteCO0501C" parameterType="map" >
+        <![CDATA[ /* co0301.deleteCO0501C */ ]]>
+        DELETE
+          FROM CO0501C
+         WHERE STD_OCCPT_NO = #{stdOccptNo}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+
+    <delete id="deleteCO0501J" parameterType="map" >
+        <![CDATA[ /* co0301.deleteCO0501J */ ]]>
+        DELETE
+          FROM CO0501J
+         WHERE STD_JOB_NO = #{stdJobNo}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+
+    <delete id="deleteCO0501P" parameterType="map" >
+        <![CDATA[ /* co0301.deleteCO0501P */ ]]>
+        DELETE
+          FROM CO0501P
+         WHERE STD_PART_NO = #{stdPartNo}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+
+    <delete id="deleteCO0301MByCO0301C" parameterType="map" >
+        <![CDATA[ /* co0301.deleteCO0301MByCO0301C */ ]]>
+        DELETE
+          FROM CO0501C
+         WHERE STD_NO = #{stdNo}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+
+    <delete id="deleteCO0301MByCO0301J" parameterType="map" >
+        <![CDATA[ /* co0301.deleteCO0301MByCO0301J */ ]]>
+        DELETE
+          FROM CO0501J
+         WHERE STD_NO = #{stdNo}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+
+    <delete id="deleteCO0301MByCO0301P" parameterType="map" >
+        <![CDATA[ /* co0301.deleteCO0301MByCO0301P */ ]]>
+        DELETE
+          FROM CO0501P
+         WHERE STD_NO = #{stdNo}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+
+    <select id="retrieveWoJobList" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0301.retrieveWoJobList */ ]]>
+        SELECT
+               X.SEQ_NO
+             , X.COMPANY_CD
+             , X.WORK_DESC AS WORK_NM
+             , X.CMMNT
+          FROM WO0302J X
+         WHERE X.WO_NO = #{woNo}
+           AND COMPANY_CD = #{companyCd}
+         ORDER BY X.SEQ_NO ASC
+    </select>
+
+    <select id="retrieveWoCraftList" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0301.retrieveWoCraftList */ ]]>
+        SELECT
+               X.SEQ_NO
+             , X.COMPANY_CD
+             , X.OCCPT_CD
+             , X.WORK_USER_ID
+             , Y.TRADE_NM  WORK_USER_NM
+             , X.WORK_HOUR
+             , X.USER_COST
+          FROM WO0302C X
+         INNER JOIN CO0601M Y ON (Y.TRADE_CD = X.WORK_USER_ID AND Y.COMPANY_CD = X.COMPANY_CD)
+         WHERE X.WO_NO = #{woNo}
+           AND X.COMPANY_CD = #{companyCd}
+         ORDER BY X.SEQ_NO ASC
+    </select>
+
+    <select id="retrieveWoMaterialList" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0301.retrieveWoMaterialList */ ]]>
+        SELECT
+               X.PART_CD
+             , X.COMPANY_CD
+             , Y.PART_NM
+             , X.USE_QTY
+             , Y.UNIT_CD
+             , Y.UNIT_COST
+             , (X.USE_QTY * Y.UNIT_COST) AS AMOUNT
+          FROM WO0301P X
+         INNER JOIN PT0101M Y ON (Y.PART_CD = X.PART_CD AND Y.COMPANY_CD = X.COMPANY_CD)
+         WHERE X.WO_NO = #{woNo}
+           AND X.COMPANY_CD = #{companyCd}
+         ORDER BY X.PART_CD ASC
+    </select>
+
+    <select id="retrieveWoStdPopList" parameterType="map" resultType="map" >
+         <![CDATA[ /* co0301.retrieveWoStdPopList */ ]]>
+         SELECT
+                X.WO_NO
+              , X.COMPANY_CD
+              , X.WO_NM
+              , dbo.FN_NAME(X.WO_STS, 'WO_STS') WO_STS_NM
+              , dbo.FN_NAME(Z.REQ_USER_ID, 'USER')    REQ_USER_ID
+              , dbo.FN_NAME(X.PLAN_USER_ID, 'USER')  PLAN_USER_DESC
+              , X.EQ_NO
+              , dbo.FN_NAME(X.WO_TP, 'WO_TP') WO_TP_NM
+              , dbo.FN_NAME(X.WO_GRD, 'WO_GRD') WO_GRD_NM
+              , dbo.FN_NAME(X.PRIOR_CD, 'PRIOR_CD') PRIOR_NM
+              , dbo.FN_NAME(X.WORK_CNDT_CD, 'WORK_CNDT_CD') WORK_CNDT_NM
+              , dbo.FN_NAME(X.WO_KIND, 'WO_KIND') WO_KIND_NM
+              , dbo.FN_NAME(X.WORK_USER_ID, 'USER') AS WORK_USER_NM
+              , dbo.FN_NAME(Y.EQ_TP, 'EQ_TP') EQ_TP_NM
+           FROM WO0201M X
+		  INNER JOIN EQ0101M Y ON (X.EQ_NO  = Y.EQ_NO AND X.COMPANY_CD = Y.COMPANY_CD)
+		   LEFT OUTER JOIN WO0101M Z ON (X.REQ_NO = Z.REQ_NO AND X.COMPANY_CD = Z.COMPANY_CD)
+          WHERE Y.REV_NO = #{revNo}
+            AND X.COMPANY_CD = #{companyCd}
+         <if test="fWoSts != null &amp;&amp; fWoSts != ''">
+         	AND X.WO_STS IN (${fWoSts})
+         </if>
+         <if test="fWoNo != null &amp;&amp; fWoNo != ''">
+            AND X.WO_NO LIKE #{fWoNo} + '%'
+         </if>
+         <if test="fWoNm != null &amp;&amp; fWoNm != ''">
+            AND UPPER(X.WO_NM) LIKE '%' + UPPER(#{fWoNm}) + '%'
+         </if>
+          ORDER BY WO_NO DESC
+    </select>
+</mapper>

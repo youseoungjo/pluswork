@@ -1,0 +1,1112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : 예방정비마스터
+* Description : 예방정비마스터
+* Author : jit13
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveMT0101     : 점검데이터 목록 조회
+*************************************************************************************-->
+<mapper namespace="mt0101">
+    <!-- 예방정비마스터 조회 -->
+    <select id="retrieveMT0101" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0101.retrieveMT0101 */ ]]>
+        SELECT X.PM_NO
+             , X.COMPANY_CD
+             , X.PM_REV_NO
+             , X.PM_NM
+             , Y.EQ_NO
+             , Y.EQ_NM
+             , X.PM_TP
+             , X.CYCLE_CD
+             , X.CYCLE_TP
+             , CASE WHEN X.PM_TP = 'T' THEN X.CYCLE_CD + ' ' + dbo.FN_NAME(X.CYCLE_TP, 'PERIOD_TYPE')
+                    WHEN X.PM_TP = 'U' THEN CONVERT(VARCHAR,X.USE_AMT)  + ' ' + (SELECT UNIT_NM FROM CO0401M WHERE UNIT_CD = X.UNIT_CD)
+                    ELSE ''
+                    END CYCLE_DESC
+             , X.PLAN_ORG_CD
+             , dbo.FN_NAME(X.PLAN_ORG_CD, 'DEPT') PLAN_ORG_CD_DESC
+             , X.PM_HOUR
+             , X.PREV_PM_YMD
+             , X.LAST_PM_YMD
+             , X.CMMNT
+             , ISNULL(X.ACT_YN,'N') ACT_YN
+             , X.EQ_NO
+             , X.CAL_CD
+             , X.WO_GRD
+             , X.PRIOR_CD
+             , X.WORK_CNDT_CD
+             , X.USE_AMT
+             , X.UNIT_CD
+             , (SELECT UNIT_NM FROM CO0401M WHERE UNIT_CD = X.UNIT_CD) UNIT_NM
+             , X.DAY_WEEK
+             , X.WORK_DESC
+             , X.FST_REG_USER_ID
+             , X.CYCLE_CHANGE_YN
+             , Y.EQ_GRD
+             , 'U' AS SAVE_DIV
+             , (SELECT CLS_NM FROM EQ0201M WHERE COMPANY_CD = Y.COMPANY_CD AND PLANT_CODE = Y.PLANT_CODE AND FACTORY_CODE = Y.FACTORY_CODE AND CLS_CD = Y.EQ_LINE) AS EQ_LINE_NM
+          FROM MT0101M X
+		 INNER JOIN EQ0101M Y ON (Y.EQ_NO = X.EQ_NO AND Y.COMPANY_CD = X.COMPANY_CD)
+		  LEFT OUTER JOIN MT0101M_R R ON (R.PM_REV_NO = X.PM_REV_NO AND R.COMPANY_CD = X.COMPANY_CD)
+         WHERE Y.REV_NO = #{revNo}
+           AND X.COMPANY_CD = #{companyCd}
+        <if test="fpmNo != null &amp;&amp; fpmNo != ''">
+           AND X.PM_NO = #{fpmNo}
+        </if>
+        <if test="fpmNm != null &amp;&amp; fpmNm != ''">
+           AND UPPER(X.PM_NM) LIKE '%' + UPPER(#{fpmNm}) + '%'
+        </if>
+        <if test="fplanOrgCd != null &amp;&amp; fplanOrgCd != ''">
+           AND X.PLAN_ORG_CD = #{fplanOrgCd}
+        </if>
+        <if test="feqNo != null &amp;&amp; feqNo != ''">
+           AND EXISTS (
+               SELECT 1
+                 FROM EQ0101M J
+                WHERE J.REV_NO = #{revNo}
+                  AND J.EQ_NO  = X.EQ_NO
+                  AND J.EQ_NO  = #{feqNo}
+                  AND J.COMPANY_CD = #{companyCd}
+               )
+        </if>
+        <if test="fwoGrd != null &amp;&amp; fwoGrd != ''">
+           AND X.WO_GRD IN (${fwoGrd})
+        </if>
+        <if test='fpmTp != null &amp;&amp; !fpmTp.equals("A")'>
+           AND X.PM_TP = #{fpmTp}
+        </if>
+        <if test="fcycleCd != null &amp;&amp; fcycleCd != ''">
+           AND X.CYCLE_CD = #{fcycleCd}
+        </if>
+        <if test="fcycleTp != null &amp;&amp; fcycleTp != ''">
+           AND X.CYCLE_TP IN (${fcycleTp})
+        </if>
+         ORDER BY PM_NO DESC
+    </select>
+    <!-- 예방정비마스터 조회 -->
+    <select id="retrieveMT0101ToTree" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0101.retrieveMT0101ToTree */ ]]>
+        WITH EQ_SUB
+          AS (SELECT CLS_CD,
+                     PRNT_CLS_CD,
+                     CLS_LVL,
+                     COMPANY_CD
+              FROM   EQ0201M
+              WHERE  EQ_CLS = #{eqClsDiv}
+                     AND CLS_CD IN (${eqNo})
+                     AND COMPANY_CD = #{companyCd}
+              UNION ALL
+              SELECT M.CLS_CD,
+                     M.PRNT_CLS_CD,
+                     M.CLS_LVL,
+                     M.COMPANY_CD
+              FROM   EQ0201M M
+                     JOIN EQ_SUB N
+                       ON N.CLS_CD = M.PRNT_CLS_CD AND N.COMPANY_CD = M.COMPANY_CD
+              WHERE  1 = 1)
+        SELECT X.PM_NO
+             , X.PM_REV_NO
+             , X.PM_NM
+             , X.COMPANY_CD
+             , Y.EQ_NO
+             , Y.EQ_NM
+             , X.PM_TP
+             , X.CYCLE_CD
+             , X.CYCLE_TP
+             , CASE WHEN X.PM_TP = 'T' THEN X.CYCLE_CD + ' ' + dbo.FN_NAME(X.CYCLE_TP, 'PERIOD_TYPE')
+                    WHEN X.PM_TP = 'U' THEN CONVERT(VARCHAR,X.USE_AMT)  + ' ' + (SELECT UNIT_NM FROM CO0401M WHERE UNIT_CD = X.UNIT_CD)
+                    ELSE ''
+                    END CYCLE_DESC
+             , X.PLAN_ORG_CD
+             , dbo.FN_NAME(X.PLAN_ORG_CD, 'DEPT') PLAN_ORG_CD_DESC
+             , X.PM_HOUR
+             , X.PREV_PM_YMD
+             , X.LAST_PM_YMD
+             , X.CMMNT
+             , ISNULL(X.ACT_YN,'N') ACT_YN
+             , X.EQ_NO
+             , X.CAL_CD
+             , X.WO_GRD
+             , X.PRIOR_CD
+             , X.WORK_CNDT_CD
+             , X.USE_AMT
+             , X.UNIT_CD
+             , (SELECT UNIT_NM FROM CO0401M WHERE UNIT_CD = X.UNIT_CD) UNIT_NM
+             , X.DAY_WEEK
+             , X.WORK_DESC
+             , X.FST_REG_USER_ID
+             , X.CYCLE_CHANGE_YN
+             , Y.EQ_GRD
+             , 'U' AS SAVE_DIV
+             , (SELECT CLS_NM FROM EQ0201M WHERE PLANT_CODE = Y.PLANT_CODE AND FACTORY_CODE = Y.FACTORY_CODE AND CLS_CD = Y.EQ_LINE) AS EQ_LINE_NM
+          FROM MT0101M X
+		 INNER JOIN EQ0101M Y ON (Y.EQ_NO = X.EQ_NO AND Y.COMPANY_CD = X.COMPANY_CD)
+		  LEFT OUTER JOIN MT0101M_R R ON (R.PM_REV_NO = X.PM_REV_NO AND R.COMPANY_CD = X.COMPANY_CD)
+         WHERE Y.REV_NO = #{revNo}
+           AND X.COMPANY_CD = #{companyCd}
+         <if test="eqClsDiv == 'EQ_TP'">
+          AND Y.EQ_TP IN (
+              SELECT CLS_CD FROM EQ_SUB
+              )
+         </if>
+         <if test="eqClsDiv == 'EQ_LOC'">
+          AND Y.EQ_LOC IN (
+                SELECT CLS_CD FROM EQ_SUB
+              )
+         </if>
+         <if test="eqClsDiv == 'EQ_PRCS'">
+          AND Y.EQ_PRCS IN (
+                SELECT CLS_CD FROM EQ_SUB
+              )
+         </if>
+         <if test="eqClsDiv == 'EQ_MY'">
+          AND Y.EQ_PRCS IN (
+                 SELECT EQ_PRCS
+                  FROM EQ0101M
+                 WHERE 1=1
+                   AND EQ_NO IN (${eqNo})
+                   AND COMPANY_CD = #{companyCd}
+              )
+          AND Y.EQ_NO IN (SELECT EQ_NO FROM EQ0101P WHERE COMPANY_CD = #{companyCd} AND USE_YN = 'Y' AND USER_ID = #{userId})
+         </if>
+         ORDER BY PM_NO DESC
+    </select>
+
+    <!-- 점비데이터작성 조회 - 작업 -->
+    <select id="retrieveMT0101SubJobList" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0101.retrieveMT0101SubJobList */ ]]>
+        SELECT
+               X.SEQ_NO
+             , X.COMPANY_CD
+             , X.WORK_NM
+             , X.PM_NO
+             , X.CMMNT
+             , X.PM_JOB_NO
+             , X.WORK_PART
+             , X.WORK_METHOD
+          FROM MT0102J X
+         WHERE PM_NO = #{pmNo}
+           AND COMPANY_CD = #{companyCd}
+         ORDER BY SEQ_NO ASC
+    </select>
+
+    <!-- 점비데이터작성 조회 - 인력 -->
+    <select id="retrieveMT0101SubCraftList" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0101.retrieveMT0101SubCraftList */ ]]>
+           SELECT
+                  X.SEQ_NO
+                , X.OCCPT_CD
+                , X.PM_NO
+                , X.WORK_USER_ID
+                , ISNULL(Z.USER_NM, Y.TRADE_NM)   WORK_USER_NM
+                , X.USER_COST
+                , X.WORK_HOUR
+                , X.PM_OCCPT_NO
+                , X.IN_OUT_DIV
+                , X.COMPANY_CD
+             FROM MT0102C X
+             LEFT OUTER JOIN CO0601M Y ON (Y.TRADE_CD = X.WORK_USER_ID AND Y.COMPANY_CD = X.COMPANY_CD)
+             LEFT OUTER JOIN SC_USER Z ON (X.WORK_USER_ID = Z.USER_ID AND X.COMPANY_CD = Z.COMPANY_CD)
+            WHERE X.PM_NO = #{pmNo}
+              AND X.COMPANY_CD = #{companyCd}
+            ORDER BY x.SEQ_NO
+    </select>
+
+    <!-- 점비데이터작성 조회 - 자재 -->
+    <select id="retrieveMT0101SubPartsList" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0101.retrieveMT0101SubPartsList */ ]]>
+           SELECT
+                  X.PART_CD
+                , X.COMPANY_CD
+                , X.USE_QTY
+                , X.PM_NO
+                , X.PM_PART_NO
+                , Y.UNIT_CD
+                , X.UNIT_COST
+                , Y.PART_NM
+                , ( X.UNIT_COST * X.USE_QTY ) AS AMOUNT
+             FROM MT0102P X
+            INNER JOIN PT0101M Y ON (X.COMPANY_CD = Y.COMPANY_CD AND X.PART_CD = Y.PART_CD)
+            WHERE X.PM_NO = #{pmNo}
+              AND X.COMPANY_CD = #{companyCd}
+            ORDER BY PART_CD
+    </select>
+
+    <!-- 점검일정데이터 조회 -->
+    <select id="retrieveMT0101Sub2" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0101.retrieveMT0101Sub2 */ ]]>
+        SELECT
+               X.PLAN_START_YMD
+             , X.PLAN_END_YMD
+             , X.WO_NO
+             , Y.WO_NM
+             , Y.WO_STS
+             , dbo.FN_NAME(Y.WO_STS, 'WO_STS') WO_STS_DESC
+             , Y.START_YMD
+             , Y.END_YMD
+             , X.COMPANY_CD
+          FROM MT0201M X
+		  LEFT OUTER JOIN WO0201M Y ON (Y.WO_NO = X.WO_NO AND Y.COMPANY_CD = X.COMPANY_CD)
+         WHERE X.PM_NO = #{pmNo}
+           AND X.COMPANY_CD = #{companyCd}
+         ORDER BY X.PLAN_START_YMD ASC
+    </select>
+
+    <!-- 예방정비 정보 저장(TBM)  -->
+    <insert id="saveMT0101ListTbm" parameterType="map" >
+        <![CDATA[ /* mt0101.saveMT0101ListTbm */ ]]>
+        INSERT INTO MT0101M (
+               PM_NO
+             , COMPANY_CD
+             , PM_REV_NO
+             , WO_GRD
+             , ACT_YN
+             , PM_NM
+             , PRIOR_CD
+             , EQ_NO
+             , CAL_CD
+             , PLAN_ORG_CD
+             , WORK_CNDT_CD
+             , LAST_PM_YMD
+             , PM_TP
+             , CYCLE_CD
+             , CYCLE_TP
+             , CMMNT
+             , WORK_DESC
+             , PM_HOUR
+             , DAY_WEEK
+             , CYCLE_CHANGE_YN
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{pmNo}
+             , #{companyCd}
+             , #{pmRevNo}
+             , #{woGrd}
+             , #{actYn}
+             , #{pmNm}
+             , #{priorCd}
+             , #{eqNo}
+             , #{calCd}
+             , #{planOrgCd}
+             , #{workCndtCd}
+             , #{lastPmYmd}
+             , #{pmTp}
+             , #{cycleCd}
+             , #{cycleTp}
+             , #{cmmnt}
+             , #{workDesc}
+             , #{pmHour}
+             , #{dayWeek}
+             , #{cycleChangeYn}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <!-- 예방정비 정보 리비전 저장(TBM)  -->
+    <insert id="saveMT0101RListTbm" parameterType="map" >
+        <![CDATA[ /* mt0101.saveMT0101RListTbm */ ]]>
+        INSERT INTO MT0101M_R (
+               PM_REV_NO
+             , COMPANY_CD
+             , PM_REV_SEQ
+             , PM_REV_YMD
+             , PM_REV_STS
+             , PM_NO
+             , WO_GRD
+             , ACT_YN
+             , PM_NM
+             , PRIOR_CD
+             , EQ_NO
+             , CAL_CD
+             , PLAN_ORG_CD
+             , WORK_CNDT_CD
+             , LAST_PM_YMD
+             , PM_TP
+             , CYCLE_CD
+             , CYCLE_TP
+             , CMMNT
+             , WORK_DESC
+             , PM_HOUR
+             , DAY_WEEK
+             , CYCLE_CHANGE_YN
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{pmRevNo}
+             , #{companyCd}
+             , #{pmRevSeq}
+             <if test="pmRevSts == '30'">
+             , GETDATE()
+             </if>
+             <if test="pmRevSts != '30'">
+             , #{pmRevYmd}
+             </if>
+             , #{pmRevSts}
+             , #{pmNo}
+             , #{woGrd}
+             , #{actYn}
+             , #{pmNm}
+             , #{priorCd}
+             , #{eqNo}
+             , #{calCd}
+             , #{planOrgCd}
+             , #{workCndtCd}
+             , #{lastPmYmd}
+             , #{pmTp}
+             , #{cycleCd}
+             , #{cycleTp}
+             , #{cmmnt}
+             , #{workDesc}
+             , #{pmHour}
+             , #{dayWeek}
+             , #{cycleChangeYn}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <!-- 예방정비 정보 저장(UBM)  -->
+    <insert id="saveMT0101ListUbm" parameterType="map" >
+        <![CDATA[ /* mt0101.saveMT0101ListUbm */ ]]>
+        INSERT INTO MT0101M (
+               PM_NO
+             , COMPANY_CD
+             , WO_GRD
+             , ACT_YN
+             , PM_NM
+             , PRIOR_CD
+             , EQ_NO
+             , CAL_CD
+             , PLAN_ORG_CD
+             , WORK_CNDT_CD
+             , LAST_PM_YMD
+             , PM_TP
+             , USE_AMT
+             , UNIT_CD
+             , CMMNT
+             , WORK_DESC
+             , PM_HOUR
+             , CYCLE_CHANGE_YN
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{pmNo}
+             , #{companyCd}
+             , #{woGrd}
+             , #{actYn}
+             , #{pmNm}
+             , #{priorCd}
+             , #{eqNo}
+             , #{calCd}
+             , #{planOrgCd}
+             , #{workCndtCd}
+             , #{lastPmYmd}
+             , #{pmTp}
+             , #{useAmt}
+             , #{unitCd}
+             , #{cmmnt}
+             , #{workDesc}
+             , #{pmHour}
+             , #{cycleChangeYn}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <!-- 예방정비 정보 리비전 저장(UBM)  -->
+    <insert id="saveMT0101RListUbm" parameterType="map" >
+        <![CDATA[ /* mt0101.saveMT0101RListUbm */ ]]>
+        INSERT INTO MT0101M_R (
+               PM_REV_NO
+             , COMPANY_CD
+             , PM_REV_SEQ
+             , PM_REV_YMD
+             , PM_REV_STS
+             , PM_NO
+             , WO_GRD
+             , ACT_YN
+             , PM_NM
+             , PRIOR_CD
+             , EQ_NO
+             , CAL_CD
+             , PLAN_ORG_CD
+             , WORK_CNDT_CD
+             , LAST_PM_YMD
+             , PM_TP
+             , USE_AMT
+             , UNIT_CD
+             , CMMNT
+             , WORK_DESC
+             , PM_HOUR
+             , CYCLE_CHANGE_YN
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{pmRevNo}
+             , #{companyCd}
+             , #{pmRevSeq}
+             <if test="pmRevSts == '30'">
+             , GETDATE()
+             </if>
+             <if test="pmRevSts != '30'">
+             , #{pmRevYmd}
+             </if>
+             , #{pmRevSts}
+             , #{pmNo}
+             , #{woGrd}
+             , #{actYn}
+             , #{pmNm}
+             , #{priorCd}
+             , #{eqNo}
+             , #{calCd}
+             , #{planOrgCd}
+             , #{workCndtCd}
+             , #{lastPmYmd}
+             , #{pmTp}
+             , #{useAmt}
+             , #{unitCd}
+             , #{cmmnt}
+             , #{workDesc}
+             , #{pmHour}
+             , #{cycleChangeYn}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <!-- 점검목록 정보 수정  -->
+    <update id="updateMT0101ListTbm" parameterType="map" >
+        <![CDATA[ /* mt0101.updateMT0101ListTbm */ ]]>
+        UPDATE MT0101M
+          SET
+              WO_GRD           = #{woGrd}
+            , ACT_YN           = #{actYn}
+            , PM_NM            = #{pmNm}
+            , PRIOR_CD         = #{priorCd}
+            , EQ_NO            = #{eqNo}
+            , CAL_CD           = #{calCd}
+            , PLAN_ORG_CD      = #{planOrgCd}
+            , PM_HOUR          = #{pmHour}
+            , WORK_CNDT_CD     = #{workCndtCd}
+            , LAST_PM_YMD      = #{lastPmYmd}
+            , PM_TP            = #{pmTp}
+            , CMMNT            = #{cmmnt}
+            , WORK_DESC        = #{workDesc}
+            , CYCLE_CD         = #{cycleCd}
+            , CYCLE_TP         = #{cycleTp}
+            , USE_AMT          = ''
+            , UNIT_CD          = ''
+            , DAY_WEEK         = #{dayWeek}
+            , FNL_EDIT_DT      = GETDATE()
+            , FNL_EDIT_USER_ID = #{fnlEditUserId}
+        WHERE PM_NO            = #{pmNo}
+          AND COMPANY_CD       = #{companyCd}
+    </update>
+
+    <!-- 정비목록 정보 수정 (UBM) -->
+    <update id="updateMT0101ListUbm" parameterType="map" >
+        <![CDATA[ /* mt0101.updateMT0101ListUbm */ ]]>
+        UPDATE MT0101M
+          SET
+              WO_GRD           = #{woGrd}
+            , ACT_YN           = #{actYn}
+            , PM_NM            = #{pmNm}
+            , PRIOR_CD         = #{priorCd}
+            , EQ_NO            = #{eqNo}
+            , CAL_CD           = #{calCd}
+            , PLAN_ORG_CD      = #{planOrgCd}
+            , PM_HOUR          = #{pmHour}
+            , WORK_CNDT_CD     = #{workCndtCd}
+            , LAST_PM_YMD      = #{lastPmYmd}
+            , PM_TP            = #{pmTp}
+            , CMMNT            = #{cmmnt}
+            , WORK_DESC        = #{workDesc}
+            , CYCLE_CD         = ''
+            , CYCLE_TP         = ''
+            , USE_AMT          = #{useAmt}
+            , UNIT_CD          = #{unitCd}
+            , DAY_WEEK         = ''
+            , FNL_EDIT_DT      = GETDATE()
+            , FNL_EDIT_USER_ID = #{fnlEditUserId}
+        WHERE PM_NO            = #{pmNo}
+          AND COMPANY_CD       = #{companyCd}
+    </update>
+
+    <!-- 작업 항목 정보 저장  -->
+    <insert id="insertMT0102J" parameterType="map" >
+     <![CDATA[ /* mt0101.insertMT0102J */ ]]>
+        INSERT INTO MT0102J (
+               PM_JOB_NO
+             , COMPANY_CD
+             , SEQ_NO
+             , WORK_NM
+             , PM_NO
+             , CMMNT
+             , WORK_PART
+             , WORK_METHOD
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{pmJobNo}
+             , #{companyCd}
+             , #{seqNo}
+             , #{workNm}
+             , #{pmNo}
+             , #{cmmnt}
+             , #{workPart}
+             , #{workMethod}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+     <!-- 작업 항목 정보 리비전 저장  -->
+    <insert id="insertMT0102JR" parameterType="map" >
+     <![CDATA[ /* mt0101.insertMT0102JR */ ]]>
+        INSERT INTO MT0102J_R (
+               PM_REV_SEQ
+             , COMPANY_CD
+             , PM_JOB_NO
+             , SEQ_NO
+             , WORK_NM
+             , PM_NO
+             , CMMNT
+             , WORK_PART
+             , WORK_METHOD
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{pmRevSeq}
+             , #{companyCd}
+             , #{pmJobNo}
+             , #{seqNo}
+             , #{workNm}
+             , #{pmNo}
+             , #{cmmnt}
+             , #{workPart}
+             , #{workMethod}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+
+ <!-- 점검항목 정보 수정  -->
+    <update id="updateMT0102J" parameterType="map" >
+        <![CDATA[ /* mt0101.updateMT0102J */ ]]>
+        UPDATE MT0102J
+          SET
+              SEQ_NO           = #{seqNo}
+            , WORK_NM          = #{workNm}
+            , CMMNT            = #{cmmnt}
+            , WORK_PART        = #{workPart}
+            , WORK_METHOD      = #{workMethod}
+            , FNL_EDIT_DT      = GETDATE()
+            , FNL_EDIT_USER_ID = #{fnlEditUserId}
+        WHERE PM_JOB_NO        = #{pmJobNo}
+          AND COMPANY_CD       = #{companyCd}
+    </update>
+
+    <!-- 점검항목 정보  삭제 -->
+    <delete id="deleteMT0102J" parameterType="map" >
+        <![CDATA[ /* mt0101.deleteMT0102J */ ]]>
+        DELETE
+          FROM MT0102J
+         WHERE PM_JOB_NO   = #{pmJobNo}
+           AND COMPANY_CD  = #{companyCd}
+    </delete>
+
+    <insert id="insertMT0102C" parameterType="map" >
+        <![CDATA[ /* mt0101.insertMT0102C */ ]]>
+        INSERT INTO MT0102C (
+               PM_OCCPT_NO
+             , COMPANY_CD
+             , SEQ_NO
+             , OCCPT_CD
+             , PM_NO
+             , WORK_HOUR
+             , WORK_USER_ID
+             , USER_COST
+             , IN_OUT_DIV
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{pmOccptNo}
+             , #{companyCd}
+             , #{seqNo}
+             , #{occptCd}
+             , #{pmNo}
+             , #{workHour}
+             , #{workUserId}
+             , #{userCost}
+             , #{inOutDiv}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <insert id="insertMT0102CR" parameterType="map" >
+        <![CDATA[ /* mt0101.insertMT0102CR */ ]]>
+        INSERT INTO MT0102C_R (
+               PM_REV_SEQ
+             , COMPANY_CD
+             , PM_OCCPT_NO
+             , SEQ_NO
+             , OCCPT_CD
+             , PM_NO
+             , WORK_HOUR
+             , WORK_USER_ID
+             , USER_COST
+             , IN_OUT_DIV
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{pmRevSeq}
+             , #{companyCd}
+             , #{pmOccptNo}
+             , #{seqNo}
+             , #{occptCd}
+             , #{pmNo}
+             , #{workHour}
+             , #{workUserId}
+             , #{userCost}
+             , #{inOutDiv}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <!-- 점검항목 정보 수정  -->
+    <update id="updateMT0102C" parameterType="map" >
+        <![CDATA[ /* mt0101.updateMT0102C */ ]]>
+        UPDATE MT0102C
+          SET
+              SEQ_NO           = #{seqNo}
+            , OCCPT_CD         = #{occptCd}
+            , WORK_HOUR        = #{workHour}
+            , WORK_USER_ID     = #{workUserId}
+            , USER_COST        = #{userCost}
+            , IN_OUT_DIV       = #{inOutDiv}
+            , FNL_EDIT_DT      = GETDATE()
+            , FNL_EDIT_USER_ID = #{fnlEditUserId}
+        WHERE PM_OCCPT_NO      = #{pmOccptNo}
+          AND COMPANY_CD       = #{companyCd}
+    </update>
+
+    <!-- 점검항목 정보  삭제 -->
+    <delete id="deleteMT0102C" parameterType="map" >
+        <![CDATA[ /* mt0101.deleteMT0102C */ ]]>
+        DELETE
+          FROM MT0102C
+         WHERE PM_OCCPT_NO = #{pmOccptNo}
+           AND COMPANY_CD  = #{companyCd}
+    </delete>
+
+    <select id="retrieveStNo1" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0101.retrieveStNo1 */ ]]>
+        SELECT X.EQ_TP
+             , dbo.FN_NAME(X.EQ_TP , 'EQ_TP') EQ_TP_DESC
+             , X.STD_NO
+             , X.STD_NM
+             , X.CMMNT
+          FROM CO0501M X
+         WHERE X.USE_YN = 'Y'
+           AND X.COMPANY_CD = #{companyCd}
+        <if test="fstdNo != null &amp;&amp; fstdNo != ''">
+           AND X.STD_NO = #{fstdNo}
+        </if>
+        <if test="fitemNo != null &amp;&amp; fitemNo != ''">
+           AND X.STD_NO IN (
+                 SELECT A.STD_NO
+                   FROM EQ0105M A, EQ0101M B
+                  WHERE B.REV_NO = #{revNo}
+                    AND A.EQ_NO  = B.EQ_NO
+                    AND B.EQ_NO  = #{feqNo}
+                    AND B.COMPANY_CD = #{companyCd}
+                )
+        </if>
+        <if test="fstdNm != null &amp;&amp; fstdNm != ''">
+           AND UPPER(X.STD_NM) LIKE '%' + UPPER(#{fstdNm}) + '%'
+        </if>
+        <if test="fEqTp != null &amp;&amp; fEqTp != ''">
+           AND X.EQ_TP = #{fEqTp}
+        </if>
+         ORDER BY STD_NO
+   </select>
+
+    <select id="retrieveStNo2" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0101.retrieveStNo2 */ ]]>
+        SELECT
+               SEQ_NO
+             , COMPANY_CD
+             , WORK_NM
+             , CMMNT
+             , STD_JOB_NO
+             , STD_NO
+          FROM CO0501J
+         WHERE STD_NO = #{stdNo}
+           AND COMPANY_CD = #{companyCd}
+         ORDER BY SEQ_NO
+    </select>
+
+    <select id="retrieveStNo3" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0101.retrieveStNo3 */ ]]>
+        SELECT
+               X.SEQ_NO
+             , X.COMPANY_CD
+             , X.OCCPT_CD
+             , X.WORK_USER_ID
+             , ISNULL(Z.USER_NM, Y.TRADE_NM)   WORK_USER_NM
+             , X.USER_COST
+             , X.WORK_HOUR
+             , X.STD_OCCPT_NO
+             , X.STD_NO
+             , X.IN_OUT_DIV
+          FROM CO0501C X
+          LEFT OUTER JOIN CO0601M Y ON (Y.TRADE_CD = X.WORK_USER_ID AND Y.COMPANY_CD = X.COMPANY_CD)
+          LEFT OUTER JOIN SC_USER Z ON (X.WORK_USER_ID = Z.USER_ID AND X.COMPANY_CD = Z.COMPANY_CD)
+         WHERE STD_NO = #{stdNo}
+           AND X.COMPANY_CD = #{companyCd}
+         ORDER BY X.SEQ_NO
+    </select>
+
+    <select id="retrieveStNo4" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0101.retrieveStNo4 */ ]]>
+        SELECT
+               X.PART_CD
+             , X.COMPANY_CD
+             , Y.UNIT_CD
+             , (SELECT Z.UNIT_NM FROM CO0401M Z WHERE Z.UNIT_CD = Y.UNIT_CD) UNIT_CD_DESC
+             , Y.PART_NM
+             , X.SEQ_NO
+             , X.USE_QTY
+             , X.STD_PART_NO
+             , X.STD_NO
+             , X.UNIT_COST
+             , (X.UNIT_COST * X.USE_QTY ) AS AMOUNT
+          FROM CO0501P X, PT0101M Y
+         WHERE X.PART_CD = Y.PART_CD
+           AND X.COMPANY_CD = Y.COMPANY_CD
+           AND X.STD_NO    = #{stdNo}
+           AND X.COMPANY_CD = #{companyCd}
+         ORDER BY X.PART_CD
+    </select>
+
+    <select id="retrieveCalender" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0101.retrieveCalender */ ]]>
+        SELECT
+               CAL_CD AS CODE
+             , CASE WHEN USE_YN = 'Y' THEN CAL_NM
+                    ELSE CAL_NM + '(사용불가)'
+                    END VALUE
+             , USE_YN AS REF_CD_1
+          FROM MT0301M
+         WHERE COMPANY_CD = #{companyCd}
+          ORDER BY USE_YN DESC
+    </select>
+
+    <insert id="insertMT0102P" parameterType="map" >
+        <![CDATA[ /* mt0101.insertMT0102P */ ]]>
+        INSERT INTO MT0102P (
+               PM_PART_NO
+             , COMPANY_CD
+             , PART_CD
+             , USE_QTY
+             , PM_NO
+             , UNIT_COST
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{pmPartNo}
+             , #{companyCd}
+             , #{partCd}
+             , #{useQty}
+             , #{pmNo}
+             , #{unitCost}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <insert id="insertMT0102PR" parameterType="map" >
+        <![CDATA[ /* mt0101.insertMT0102PR */ ]]>
+        INSERT INTO MT0102P_R (
+               PM_REV_SEQ
+             , COMPANY_CD
+             , PM_PART_NO
+             , PART_CD
+             , USE_QTY
+             , PM_NO
+             , UNIT_COST
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{pmRevSeq}
+             , #{companyCd}
+             , #{pmPartNo}
+             , #{partCd}
+             , #{useQty}
+             , #{pmNo}
+             , #{unitCost}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <!-- 점검항목 정보 수정  -->
+    <update id="updateMT0102P" parameterType="map" >
+        <![CDATA[ /* mt0101.updateMT0102P */ ]]>
+        UPDATE MT0102P
+          SET
+              PART_CD          = #{partCd}
+            , USE_QTY          = #{useQty}
+            , UNIT_COST        = #{unitCost}
+            , FNL_EDIT_DT      = GETDATE()
+            , FNL_EDIT_USER_ID = #{fnlEditUserId}
+        WHERE PM_PART_NO       = #{pmPartNo}
+          AND COMPANY_CD       = #{companyCd}
+    </update>
+
+    <!-- 점검항목 정보  삭제 -->
+    <delete id="deleteMT0102P" parameterType="map" >
+        <![CDATA[ /* mt0101.deleteMT0102P */ ]]>
+        DELETE
+          FROM MT0102P
+         WHERE PM_PART_NO = #{pmPartNo}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+
+    <select id="retrievePmRevSeqNextValue" parameterType="map" resultType="String" >
+    	<![CDATA[ /* mt0101.retrievePmRevSeqNextValue */ ]]>
+    	SELECT NEXT VALUE FOR DBO.PM_REV_SEQ_01 AS PM_REV_SEQ
+    </select>
+
+    <select id="retrievePmRevNoNextValue" parameterType="map" resultType="String" >
+    	<![CDATA[ /* mt0101.retrievePmRevNoNextValue */ ]]>
+        SELECT NEXT VALUE FOR DBO.PM_REV_NO_01 AS PM_REV_NO
+    </select>
+
+    <select id="retrievePmJobNoSeqNextValue" parameterType="map" resultType="String" >
+    	<![CDATA[ /* mt0101.retrievePmJobNoSeqNextValue */ ]]>
+    	SELECT NEXT VALUE FOR DBO.SQMT_JOB_NO_01 AS PM_JOB_NO
+    </select>
+
+    <select id="retrievePmOccptNoSeqNextValue" parameterType="map" resultType="String" >
+    	<![CDATA[ /* mt0101.retrievePmOccptNoSeqNextValue */ ]]>
+    	SELECT NEXT VALUE FOR DBO.SQMT_OCCPT_NO_01 AS PM_OCCPT_NO
+    </select>
+
+    <select id="retrievePmPartNoSeqNextValue" parameterType="map" resultType="String" >
+    	<![CDATA[ /* mt0101.retrievePmPartNoSeqNextValue */ ]]>
+    	SELECT NEXT VALUE FOR DBO.SQMT_PART_NO_01 AS PM_PART_NO
+    </select>
+    <select id="retrieveMT0101RList" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0101.retrieveMT0101RList */ ]]>
+        SELECT
+               X.PM_REV_NO
+             , X.COMPANY_CD
+             , X.PM_REV_SEQ
+             , CONVERT(VARCHAR,X.PM_REV_YMD,120) AS PM_REV_YMD
+             , X.PM_REV_STS
+             , DBO.FN_NAME(X.PM_REV_STS,'REV_STS') AS PM_REV_STS_NM
+             , X.PM_NO
+             , X.PM_NM
+             , X.EQ_NO
+             , Y.EQ_NM
+             , X.PM_TP
+             , X.CYCLE_CD
+             , X.CYCLE_TP
+             , CASE WHEN X.PM_TP = 'T' THEN X.CYCLE_CD + ' ' + dbo.FN_NAME(X.CYCLE_TP, 'PERIOD_TYPE')
+                    WHEN X.PM_TP = 'U' THEN CONVERT(VARCHAR,X.USE_AMT)  + ' ' + (SELECT UNIT_NM FROM CO0401M WHERE UNIT_CD = X.UNIT_CD)
+                    ELSE ''
+                    END CYCLE_DESC
+             , X.PLAN_ORG_CD
+             , dbo.FN_NAME(X.PLAN_ORG_CD, 'DEPT') PLAN_ORG_CD_DESC
+             , X.PM_HOUR
+             , X.PREV_PM_YMD
+             , X.LAST_PM_YMD
+             , X.CMMNT
+             , ISNULL(X.ACT_YN,'N') ACT_YN
+             , X.EQ_NO
+             , X.CAL_CD
+             , X.WO_GRD
+             , X.PRIOR_CD
+             , X.WORK_CNDT_CD
+             , X.USE_AMT
+             , X.UNIT_CD
+             , (SELECT UNIT_NM FROM CO0401M WHERE UNIT_CD = X.UNIT_CD) UNIT_NM
+             , X.DAY_WEEK
+             , X.WORK_DESC
+             , X.FST_REG_USER_ID
+             , CONVERT(VARCHAR,X.FST_REG_DT,120) AS FST_REG_DT
+          FROM MT0101M_R X
+         INNER JOIN EQ0101M Y ON (Y.EQ_NO = X.EQ_NO AND Y.COMPANY_CD = X.COMPANY_CD)
+         WHERE X.PM_NO = #{pmNo}
+           AND X.COMPANY_CD = #{companyCd}
+    </select>
+
+    <!-- Revision-작업 -->
+    <select id="retrieveMT0101SubJobRList" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0101.retrieveMT0101SubJobRList */ ]]>
+        SELECT
+               X.PM_REV_SEQ
+             , X.COMPANY_CD
+             , X.SEQ_NO
+             , X.WORK_NM
+             , X.CMMNT
+             , X.PM_JOB_NO
+             , X.WORK_PART
+             , X.WORK_METHOD
+             , X.PM_NO
+          FROM MT0102J_R X
+         WHERE X.PM_REV_SEQ = #{pmRevSeq}
+           AND X.COMPANY_CD = #{companyCd}
+         ORDER BY SEQ_NO ASC
+    </select>
+
+    <!-- Revision-인력 -->
+    <select id="retrieveMT0101SubCraftRList" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0101.retrieveMT0101SubCraftRList */ ]]>
+        SELECT
+               X.PM_REV_SEQ
+             , X.COMPANY_CD
+             , X.SEQ_NO
+             , X.OCCPT_CD
+             , X.WORK_USER_ID
+             , ISNULL(Z.USER_NM, Y.TRADE_NM)   WORK_USER_NM
+             , X.USER_COST
+             , X.WORK_HOUR
+             , X.PM_OCCPT_NO
+             , X.IN_OUT_DIV
+             , X.PM_NO
+          FROM MT0102C_R X
+          LEFT OUTER JOIN CO0601M Y ON (Y.TRADE_CD = X.WORK_USER_ID AND Y.COMPANY_CD = X.COMPANY_CD)
+          LEFT OUTER JOIN SC_USER Z ON (X.WORK_USER_ID = Z.USER_ID AND Z.COMPANY_CD = X.COMPANY_CD)
+         WHERE X.PM_REV_SEQ = #{pmRevSeq}
+           AND X.COMPANY_CD = #{companyCd}
+         ORDER BY x.SEQ_NO
+    </select>
+
+    <!-- Revision-자재 -->
+    <select id="retrieveMT0101SubPartsRList" parameterType="map" resultType="map" >
+        <![CDATA[ /* mt0101.retrieveMT0101SubPartsRList */ ]]>
+           SELECT
+                  X.PM_REV_SEQ
+                , X.COMPANY_CD
+                , X.PART_CD
+                , X.USE_QTY
+                , X.PM_PART_NO
+                , Y.UNIT_CD
+                , X.UNIT_COST
+                , Y.PART_NM
+                , ( X.UNIT_COST * X.USE_QTY ) AS AMOUNT
+                , X.PM_NO
+             FROM MT0102P_R X, PT0101M Y
+            WHERE X.PART_CD = Y.PART_CD
+              AND X.COMPANY_CD = Y.COMPANY_CD
+              AND X.PM_REV_SEQ = #{pmRevSeq}
+              AND X.COMPANY_CD = #{companyCd}
+            ORDER BY PART_CD
+    </select>
+
+    <insert id="saveMT0101MRList" parameterType="map" >
+        <![CDATA[ /* mt0101.saveMT0101MRList */ ]]>
+        MERGE INTO MT0101M_R A
+        USING (SELECT TOP 1 #{companyCd} AS COMPANY_CD, #{pmRevSeq} AS PM_REV_SEQ, #{pmNo} AS PM_NO, PM_NM, WO_GRD, ACT_YN, PRIOR_CD, EQ_NO, CAL_CD, PLAN_ORG_CD, PM_HOUR,
+        WORK_CNDT_CD, LAST_PM_YMD, PREV_PM_YMD, PM_TP, CYCLE_CD, CYCLE_TP, USE_AMT, UNIT_CD, WORK_DESC, STD_NO, DAY_WEEK, CMMNT
+        FROM MT0101M_R WHERE PM_NO = #{pmNo} AND COMPANY_CD = #{companyCd} ORDER BY PM_REV_NO DESC ) B
+           ON (A.PM_REV_SEQ = B.PM_REV_SEQ AND A.PM_NO = B.PM_NO AND A.COMPANY_CD = B.COMPANY_CD)
+         WHEN NOT MATCHED THEN
+        INSERT (PM_REV_SEQ, COMPANY_CD, PM_REV_STS, PM_NO, PM_NM, WO_GRD, ACT_YN, PRIOR_CD, EQ_NO, CAL_CD, PLAN_ORG_CD, PM_HOUR, WORK_CNDT_CD, LAST_PM_YMD,
+        PREV_PM_YMD, PM_TP, CYCLE_CD, CYCLE_TP, USE_AMT, UNIT_CD, WORK_DESC, STD_NO, DAY_WEEK,
+        CMMNT, FST_REG_DT, FST_REG_USER_ID, FNL_EDIT_DT, FNL_EDIT_USER_ID)
+        VALUES(
+               #{pmRevSeq}
+             , #{companyCd}
+             , '10'
+             , B.PM_NO
+             , B.PM_NM
+             , B.WO_GRD
+             , B.ACT_YN
+             , B.PRIOR_CD
+             , B.EQ_NO
+             , B.CAL_CD
+             , B.PLAN_ORG_CD
+             , B.PM_HOUR
+             , B.WORK_CNDT_CD
+             , B.LAST_PM_YMD
+             , B.PREV_PM_YMD
+             , B.PM_TP
+             , B.CYCLE_CD
+             , B.CYCLE_TP
+             , B.USE_AMT
+             , B.UNIT_CD
+             , B.WORK_DESC
+             , B.STD_NO
+             , B.DAY_WEEK
+             , B.CMMNT
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+          );
+    </insert>
+
+</mapper>

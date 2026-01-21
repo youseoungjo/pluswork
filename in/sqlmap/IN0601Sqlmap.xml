@@ -1,0 +1,398 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : 이상점검결과 검색
+* Description : 이상점검결과 검색
+* Author : jit13
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveIN0601    : 이상점검결과 리스트 조회
+* retrieveIN0601Sub : 이상점검결과 리스트 조회
+*************************************************************************************-->
+<mapper namespace="in0601">
+    <!-- 미점검 리스트 조회 -->
+    <select id="retrieveIN0601" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0601.retrieveIN0601 */ ]]>
+        SELECT
+                CASE WHEN X.CHK_YN = 'Y' THEN 'Y'
+			        WHEN X.CHK_REPR_TP IS NULL THEN 'N'
+					ELSE 'Y'
+					END CHK_REPR_TP
+             , X.COMPANY_CD
+             , X.CHK_YMD
+             , A.ORG_CD
+             , dbo.FN_NAME(A.ORG_CD, 'DEPT') ORG_CD_DESC
+             , B.EQ_NO
+             , B.EQ_STS
+             , B.EQ_NM
+             , A.CHK_NM
+             , A.CYCLE_CD
+             , A.CYCLE_TP
+             , (A.CYCLE_CD + ' ' + dbo.FN_NAME(A.CYCLE_TP, 'PERIOD_TYPE')) CYCLE_DESC
+             , A.CHK_NO
+             , A.CHK_DIV
+             , Z.CHK_DTL_NM
+             , Z.CHK_PART_DESC
+             , X.CHK_STS
+             , X.FILE_ATCH_ID
+             , (SELECT COUNT(*) FROM SC_FILE WHERE FILE_ATCH_ID = X.FILE_ATCH_ID) AS FILE_CNT
+             , Z.UNIT_CD
+             , (SELECT UNIT_NM FROM CO0401M WHERE UNIT_CD = Z.UNIT_CD AND COMPANY_CD = #{companyCd}) UNIT_NM
+             , X.CMMNT
+             , X.REPR_METHD
+             , ISNULL(WO.WO_NO, WR.WO_NO) WO_NO
+             , ISNULL(dbo.FN_NAME(ISNULL(WO.WO_STS, WR.WO_STS), 'WO_STS'), dbo.FN_NAME(R.WO_REQ_STS, 'WO_REQ_STS')) WO_STS
+             , CASE WHEN Z.INPUT_TP = 'STS' THEN ''
+               ELSE CONVERT(VARCHAR, Z.CHK_STD_VAL) END CHK_STD_VAL
+             , CASE WHEN Z.INPUT_TP = 'STS' THEN ''
+               ELSE CONVERT(VARCHAR, Z.CHK_MIN_VAL) END CHK_MIN_VAL
+             , CASE WHEN Z.INPUT_TP = 'STS' THEN ''
+               ELSE CONVERT(VARCHAR, Z.CHK_MAX_VAL) END CHK_MAX_VAL
+             , CASE WHEN Z.INPUT_TP = 'STS' THEN ''
+               ELSE CONVERT(VARCHAR, Z.WARN_MIN_VAL) END WARN_MIN_VAL
+             , CASE WHEN Z.INPUT_TP = 'STS' THEN ''
+               ELSE CONVERT(VARCHAR, Z.WARN_MAX_VAL) END WARN_MAX_VAL
+             , CASE WHEN Z.INPUT_TP = 'STS' THEN ''
+               ELSE CONVERT(VARCHAR, X.CHK_VAL) END CHK_VAL
+             , X.RSLT_USER_ID
+             , dbo.FN_NAME(X.RSLT_USER_ID,'USER') RSLT_USER_NM
+             , X.CHK_RSLT_NO
+         FROM IN0401D X
+		INNER JOIN IN0201D Z ON (Z.CHK_DTL_NO = X.CHK_DTL_NO AND Z.COMPANY_CD = X.COMPANY_CD)
+		INNER JOIN IN0201M A ON (A.CHK_NO = Z.CHK_NO AND A.COMPANY_CD = Z.COMPANY_CD)
+		INNER JOIN EQ0101M B ON (B.EQ_NO = A.EQ_NO AND B.COMPANY_CD = A.COMPANY_CD)
+         LEFT OUTER JOIN WO0101M R ON (R.REQ_NO = X.REQ_NO AND R.COMPANY_CD = X.COMPANY_CD)
+		 LEFT OUTER JOIN WO0201M WR ON (WR.REQ_NO = X.REQ_NO AND WR.COMPANY_CD = X.COMPANY_CD)
+		 LEFT OUTER JOIN WO0201M WO ON (WO.WO_NO = X.WO_NO AND WO.COMPANY_CD = X.COMPANY_CD)
+        WHERE B.REV_NO = #{revNo}
+          AND X.COMPANY_CD = #{companyCd}
+       <if test="fStartDate != null &amp;&amp; fStartDate != ''">
+          AND X.CHK_YMD <![CDATA[ >= ]]> #{fStartDate}
+       </if>
+       <if test="fEndDate != null &amp;&amp; fEndDate != ''">
+          AND X.CHK_YMD <![CDATA[ <= ]]> #{fEndDate}
+       </if>
+       <if test="feqNo != null &amp;&amp; feqNo != ''">
+          AND EXISTS (
+              SELECT 1
+                FROM EQ0101M J
+               WHERE J.EQ_NO  = X.EQ_NO
+                 AND J.COMPANY_CD = #{companyCd}
+                 AND J.EQ_NO  = #{feqNo}
+                 AND J.REV_NO = #{revNo}
+             )
+       </if>
+       <if test="pwoNo != null &amp;&amp; pwoNo != ''">
+          AND WO.WO_NO IN (${pwoNo})
+       </if>
+       <if test="fwoNo != null &amp;&amp; fwoNo != ''">
+          AND (X.REQ_NO = #{fwoNo}
+           OR WR.WO_NO = #{fwoNo}
+           OR WO.WO_NO = #{fwoNo})
+       </if>
+       <if test="fchkNm != null &amp;&amp; fchkNm != ''">
+          AND UPPER(A.CHK_NM) LIKE  '%' + UPPER(#{fchkNm}) + '%'
+       </if>
+       <if test="forgCd != null &amp;&amp; forgCd != ''">
+          AND  A.ORG_CD = #{forgCd}
+       </if>
+       <if test="fchkUserId != null &amp;&amp; fchkUserId != ''">
+          AND X.CHK_USER_ID = #{fchkUserId}
+       </if>
+       <if test='fchkSts != null &amp;&amp; fchkSts.equals("X")'>
+          AND X.CHK_STS = #{fchkSts}
+       </if>
+       <if test='fchkYn != null &amp;&amp; !fchkYn.equals("A")'>
+         <if test='fchkYn.equals("Y")'>
+          AND X.CHK_YN = 'Y'
+         </if>
+         <if test='fchkYn.equals("N")'>
+          AND X.CHK_REPR_TP IS NULL
+          AND X.CHK_YN = 'N'
+         </if>
+       </if>
+         ORDER BY X.CHK_YMD DESC, A.ORG_CD, B.EQ_NO, A.CHK_NM, A.CHK_NO, Z.SEQ_NO
+    </select>
+
+    <!-- 트리에서 미점검 리스트 조회 -->
+    <select id="retrieveIN0601ToTree" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0601.retrieveIN0601ToTree */ ]]>
+        <if test="eqCls == 'EQ_PRCS'">
+        WITH EQ_PRCS_SUB
+          AS (SELECT CLS_CD,
+                     PRNT_CLS_CD,
+                     CLS_LVL,
+                     COMPANY_CD
+              FROM   EQ0201M
+              WHERE  EQ_CLS = 'EQ_PRCS'
+                     AND CLS_CD IN ( (${eqNo}))
+                     AND COMPANY_CD = #{companyCd}
+              UNION ALL
+              SELECT M.CLS_CD,
+                     M.PRNT_CLS_CD,
+                     M.CLS_LVL,
+                     M.COMPANY_CD
+              FROM   EQ0201M M
+                     JOIN EQ_PRCS_SUB N
+                       ON N.CLS_CD = M.PRNT_CLS_CD AND N.COMPANY_CD = M.COMPANY_CD
+              WHERE  1 = 1)
+        </if>
+        <if test="eqCls == 'EQ_TP'">
+        WITH EQ_TP_SUB
+        AS (SELECT CLS_CD,
+                     PRNT_CLS_CD,
+                     CLS_LVL,
+                     COMPANY_CD
+              FROM   EQ0201M
+              WHERE  EQ_CLS = 'EQ_TP'
+                     AND CLS_CD IN ( (${eqNo}))
+                     AND COMPANY_CD = #{companyCd}
+              UNION ALL
+              SELECT M.CLS_CD,
+                     M.PRNT_CLS_CD,
+                     M.CLS_LVL,
+                     M.COMPANY_CD
+              FROM   EQ0201M M
+                     JOIN EQ_TP_SUB N
+                       ON N.CLS_CD = M.PRNT_CLS_CD AND N.COMPANY_CD = M.COMPANY_CD
+              WHERE  1 = 1)
+        </if>
+        <if test="eqCls == 'EQ_LOC'">
+        WITH EQ_LOC_SUB
+        AS (SELECT CLS_CD,
+                     PRNT_CLS_CD,
+                     CLS_LVL,
+                     COMPANY_CD
+              FROM   EQ0201M
+              WHERE  EQ_CLS = 'EQ_LOC'
+                     AND CLS_CD IN ( (${eqNo}))
+                     AND COMPANY_CD = #{companyCd}
+              UNION ALL
+              SELECT M.CLS_CD,
+                     M.PRNT_CLS_CD,
+                     M.CLS_LVL,
+                     M.COMPANY_CD
+              FROM   EQ0201M M
+                     JOIN EQ_LOC_SUB N
+                       ON N.CLS_CD = M.PRNT_CLS_CD AND N.COMPANY_CD = M.COMPANY_CD
+              WHERE  1 = 1)
+        </if>
+        SELECT
+                CASE WHEN X.CHK_YN = 'Y' THEN 'Y'
+			        WHEN X.CHK_REPR_TP IS NULL THEN 'N'
+					ELSE 'Y'
+					END CHK_REPR_TP
+             , X.COMPANY_CD
+             , X.CHK_YMD
+             , A.ORG_CD
+             , dbo.FN_NAME(A.ORG_CD, 'DEPT') ORG_CD_DESC
+             , B.EQ_NO
+             , B.EQ_STS
+             , B.EQ_NM
+             , A.CHK_NM
+             , A.CYCLE_CD
+             , A.CYCLE_TP
+             , (A.CYCLE_CD + ' ' + dbo.FN_NAME(A.CYCLE_TP, 'PERIOD_TYPE')) CYCLE_DESC
+             , A.CHK_NO
+             , A.CHK_DIV
+             , Z.CHK_DTL_NM
+             , Z.CHK_PART_DESC
+             , X.CHK_STS
+             , X.FILE_ATCH_ID
+             , Z.UNIT_CD
+             , (SELECT UNIT_NM FROM CO0401M WHERE UNIT_CD = Z.UNIT_CD AND COMPANY_CD = #{companyCd}) UNIT_NM
+             , X.CMMNT
+             , X.REPR_METHD
+             , ISNULL(WO.WO_NO, WR.WO_NO) WO_NO
+             , ISNULL(dbo.FN_NAME(ISNULL(WO.WO_STS, WR.WO_STS), 'WO_STS'), dbo.FN_NAME(R.WO_REQ_STS, 'WO_REQ_STS')) WO_STS
+             , CASE WHEN Z.INPUT_TP = 'STS' THEN ''
+               ELSE CONVERT(VARCHAR, Z.CHK_STD_VAL) END CHK_STD_VAL
+             , CASE WHEN Z.INPUT_TP = 'STS' THEN ''
+               ELSE CONVERT(VARCHAR, Z.CHK_MIN_VAL) END CHK_MIN_VAL
+             , CASE WHEN Z.INPUT_TP = 'STS' THEN ''
+               ELSE CONVERT(VARCHAR, Z.CHK_MAX_VAL) END CHK_MAX_VAL
+             , CASE WHEN Z.INPUT_TP = 'STS' THEN ''
+               ELSE CONVERT(VARCHAR, Z.WARN_MIN_VAL) END WARN_MIN_VAL
+             , CASE WHEN Z.INPUT_TP = 'STS' THEN ''
+               ELSE CONVERT(VARCHAR, Z.WARN_MAX_VAL) END WARN_MAX_VAL
+             , CASE WHEN Z.INPUT_TP = 'STS' THEN ''
+               ELSE CONVERT(VARCHAR, X.CHK_VAL) END CHK_VAL
+             , X.RSLT_USER_ID
+             , dbo.FN_NAME(X.RSLT_USER_ID,'USER') RSLT_USER_NM
+             , X.CHK_RSLT_NO
+         FROM IN0401D X
+		INNER JOIN IN0201D Z ON (Z.CHK_DTL_NO = X.CHK_DTL_NO AND Z.COMPANY_CD = X.COMPANY_CD)
+		INNER JOIN IN0201M A ON (A.CHK_NO = Z.CHK_NO AND A.COMPANY_CD = Z.COMPANY_CD)
+		INNER JOIN EQ0101M B ON (B.EQ_NO = A.EQ_NO AND B.COMPANY_CD = A.COMPANY_CD)
+         LEFT OUTER JOIN WO0101M R ON (R.REQ_NO = X.REQ_NO AND R.COMPANY_CD = X.COMPANY_CD)
+		 LEFT OUTER JOIN WO0201M WR ON (WR.REQ_NO = X.REQ_NO AND WR.COMPANY_CD = X.COMPANY_CD)
+		 LEFT OUTER JOIN WO0201M WO ON (WO.WO_NO = X.WO_NO AND WO.COMPANY_CD = X.COMPANY_CD)
+        WHERE B.REV_NO = #{revNo}
+          AND X.COMPANY_CD = #{companyCd}
+        <if test="eqCls == 'EQ_PRCS'">
+           AND B.EQ_PRCS IN (SELECT CLS_CD FROM EQ_PRCS_SUB)
+         </if>
+         <if test="eqCls == 'EQ_TP'">
+           AND B.EQ_TP IN (SELECT CLS_CD FROM EQ_TP_SUB)
+         </if>
+         <if test="eqCls == 'EQ_LOC'">
+           AND B.EQ_LOC IN (SELECT CLS_CD FROM EQ_LOC_SUB)
+         </if>
+         <if test="eqCls != 'EQ_PRCS' &amp;&amp; eqCls != 'EQ_TP' &amp;&amp; eqCls != 'EQ_LOC'">
+           AND B.EQ_NO IN (${eqNo})
+         </if>
+         ORDER BY X.CHK_YMD DESC, A.ORG_CD, B.EQ_NO, A.CHK_NM, A.CHK_NO, Z.SEQ_NO
+    </select>
+
+    <!-- 작업계획 W/O 발행  -->
+    <insert id="saveIN0601List" parameterType="map" >
+        <![CDATA[ /* in0601.saveIN0601List */ ]]>
+        INSERT INTO WO0201M (
+               WO_NO
+             , COMPANY_CD
+             , WO_NM
+             , WO_TP
+             , WO_STS
+             , WO_GRD
+             , WO_DIV
+             , PRIOR_CD
+             , EQ_NO
+             , EQ_GRD
+             , PLAN_ORG_CD
+             , ORG_CD
+             , PLAN_USER_ID
+             , PLAN_START_YMD
+             , PLAN_START_TIME
+             , PLAN_END_YMD
+             , PLAN_END_TIME
+             , NO_PLAN_YN
+             , CNCL_YN
+             , OUTSRC_YN
+             , HOLD_YN
+             , DEVICE_TP
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{woNo}
+             , #{companyCd}
+             , #{woNm}
+             , 'WT02'
+             , 'BA'
+             , 'B'
+             , 'IN0601'
+             , 'P02'
+             , #{eqNo}
+             , (SELECT EQ_GRD FROM EQ0101M WHERE EQ_NO = #{eqNo} AND COMPANY_CD = #{companyCd})
+             , #{planOrgCd}
+             , #{planOrgCd}
+             , #{planUserId}
+             , CONVERT(VARCHAR, GETDATE(), 23)
+             , '06:00'
+             , CONVERT(VARCHAR, GETDATE(), 23)
+             , '18:00'
+             , 'N'
+             , 'N'
+             , 'N'
+             , 'N'
+             , 'PC'
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <!-- 작업결과 W/O 발행  -->
+    <insert id="saveIN0601Result" parameterType="map" >
+        <![CDATA[ /* in0601.saveIN0601Result */ ]]>
+        INSERT INTO WO0201M (
+               WO_NO
+             , COMPANY_CD
+             , WO_NM
+             , WO_TP
+             , WO_STS
+             , WO_GRD
+             , WO_DIV
+             , PRIOR_CD
+             , EQ_NO
+             , EQ_GRD
+             , ORG_CD
+             , WORK_USER_ID
+             , START_YMD
+             , START_TIME
+             , BROKEN_START_YMD
+             , BROKEN_START_TIME
+             , NO_PLAN_YN
+             , CNCL_YN
+             , OUTSRC_YN
+             , HOLD_YN
+             , DEVICE_TP
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{woNo}
+             , #{companyCd}
+             , #{woNm}
+             , 'WT02'
+             , 'CA'
+             , 'B'
+             , 'IN0601'
+             , 'P02'
+             , #{eqNo}
+             , (SELECT EQ_GRD FROM EQ0101M WHERE EQ_NO = #{eqNo} AND COMPANY_CD = #{companyCd})
+             , #{orgCd}
+             , #{workUserId}
+             , CONVERT(VARCHAR, GETDATE(), 23)
+             , SUBSTRING(CONVERT(VARCHAR, GETDATE(), 8),1,5)
+             , CONVERT(VARCHAR, GETDATE(), 23)
+             , SUBSTRING(CONVERT(VARCHAR, GETDATE(), 8),1,5)
+             , 'Y'
+             , 'N'
+             , 'N'
+             , 'N'
+             , 'PC'
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <!-- 작업설계 W/O 정보 수정  -->
+    <update id="updateIN0601ListWo" parameterType="map" >
+        <![CDATA[ /* in0601.updateIN0601ListWo */ ]]>
+        UPDATE IN0401D
+           SET
+               WO_NO            = #{woNo}
+             , CHK_REPR_TP      = 'P'
+             , RSLT_USER_ID     = #{fnlEditUserId}
+             , CHK_YN           = 'Y'
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE CHK_RSLT_NO = #{chkRsltNo}
+           AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <!-- 조치비고 정보 수정  -->
+    <update id="updateIN0601List" parameterType="map" >
+        <![CDATA[ /* in0601.updateIN0601List */ ]]>
+        UPDATE IN0401D
+          SET
+              RSLT_USER_ID     = #{fnlEditUserId}
+            , REPR_METHD       = #{reprMethd}
+            , CHK_YN           = 'Y'
+            , FNL_EDIT_DT      = GETDATE()
+            , FNL_EDIT_USER_ID = #{fnlEditUserId}
+        WHERE CHK_RSLT_NO = #{chkRsltNo}
+          AND COMPANY_CD = #{companyCd}
+    </update>
+</mapper>

@@ -1,0 +1,1094 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : EQ0101
+* Description : 설비
+* Author :
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveEQ0101List : 메뉴 목록 조회
+* insertEQ0101 : 설비 목록 추가
+* updateEQ0101 : 설비 목록 수정
+* deleteEQ0101 : 설비 목록 삭제
+*************************************************************************************-->
+<mapper namespace="eq0101">
+    <select id="retrieveEQ0101Tree" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0101.retrieveEQ0101Tree */ ]]>
+        SELECT
+               EQ_NO
+             , EQ_PRCS
+             , EQ_NO + ' [' + EQ_NM + ']' AS EQ_NM
+          FROM EQ0101M
+         WHERE REV_NO = #{revNo}
+           AND COMPANY_CD = #{companyCd}
+       <if test="eqNm != null &amp;&amp; eqNm != ''">
+           AND UPPER(EQ_NO + ' [' + EQ_NM + ']') LIKE '%' + UPPER(#{eqNm}) + '%'
+       </if>
+         ORDER BY EQ_NO ASC
+    </select>
+
+    <select id="retrieveEQ0101List" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0101.retrieveEQ0101List */ ]]>
+        SELECT
+               M.REV_NO
+             , M.COMPANY_CD
+             , M.EQ_NO
+             , M.PRNT_EQ_NO
+             , M.EQ_NM
+             , M.EQ_STS
+             , M.EQ_PRCS
+             , (SELECT CLS_NM FROM EQ0201M WHERE COMPANY_CD = #{companyCd} AND CLS_CD = M.EQ_PRCS) AS EQ_PRCS_NM
+             , M.EQ_TP
+             , (SELECT CLS_NM FROM EQ0201M WHERE COMPANY_CD = #{companyCd} AND CLS_CD = M.EQ_TP) AS EQ_TP_NM
+             , M.EQ_LOC
+             , (SELECT CLS_NM FROM EQ0201M WHERE COMPANY_CD = #{companyCd} AND CLS_CD = M.EQ_LOC) AS EQ_LOC_NM
+             , M.EQ_GRD
+             , M.EQ_DIV
+             , M.MNFCTR_VNDR
+             , M.MNG_ORG_CD
+             , (SELECT ORG_NM FROM SC_ORG O WHERE COMPANY_CD = #{companyCd} AND O.ORG_CD = M.MNG_ORG_CD) AS MNG_ORG_NM
+             , M.MNFCTR_YMD
+             , M.TAG_NO
+             , M.MODEL_NO
+             , M.SERIAL_NO
+             , M.INST_YMD
+             , M.CMMNT
+             , M.FILE_ATCH_ID
+             , (SELECT COUNT(*) FROM SC_FILE WHERE FILE_ATCH_ID = M.FILE_ATCH_ID) AS FILE_CNT
+             , M.EQ_REV_NO
+             , R.EQ_REV_START_YMD
+             , R.EQ_REV_STS
+             , M.MNG_REC_NO
+             , M.MNG_REC_NM
+             , M.SUPPLIER_CD
+             , (SELECT TRADE_NM FROM CO0601M C WHERE COMPANY_CD = #{companyCd} AND C.TRADE_CD = M.SUPPLIER_CD) AS SUPPLIER_NM
+             , M.PLANT_CODE
+             , M.FACTORY_CODE
+             , X.CLS_LVL
+             , M.ASSET_MNG
+             , M.USE_YN
+             , M.FST_REG_USER_ID
+             , M.EQ_LINE
+             , (SELECT CLS_NM FROM EQ0201M WHERE COMPANY_CD = #{companyCd} AND CLS_CD = M.EQ_LINE AND CLS_TYPE = 'E') AS EQ_LINE_NM
+             , (SELECT POWER_EFFICIENT FROM EQ0201M WHERE COMPANY_CD = #{companyCd} AND EQ_CLS = 'EQ_TP' AND CLS_TYPE = 'E' AND CLS_CD = M.EQ_TP) AS POWER_EFFICIENT
+          FROM EQ0101M M
+          LEFT OUTER JOIN EQ0101R R ON (R.EQ_REV_NO = M.EQ_REV_NO AND R.COMPANY_CD = M.COMPANY_CD)
+          LEFT OUTER JOIN EQ0201M X ON (M.EQ_PRCS = X.CLS_CD AND M.COMPANY_CD = X.COMPANY_CD)
+         WHERE M.EQ_DIV = 'E'
+           AND M.COMPANY_CD = #{companyCd}
+         <if test="eqNoS != null &amp;&amp; eqNoS != ''">
+           AND M.EQ_NO LIKE '%' + #{eqNoS} + '%'
+           AND (UPPER(M.EQ_NO) LIKE '%'  +  UPPER(#{eqNoS})  +  '%' OR UPPER(M.EQ_NM) LIKE '%'  +  UPPER(#{eqNoS})  +  '%' )
+         </if>
+         <if test="filterEqSts != null &amp;&amp; filterEqSts != ''">
+           AND M.EQ_STS IN (${filterEqSts})
+         </if>
+         <if test="fuseYn != null &amp;&amp; fuseYn != ''">
+           AND M.USE_YN IN (${fuseYn})
+         </if>
+         ORDER BY M.EQ_NO ASC
+    </select>
+
+    <select id="retrieveEQ0101ListToTree" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0101.retrieveEQ0101ListToTree */ ]]>
+        <if test="eqCls == 'EQ_PRCS'">
+        WITH EQ_PRCS_SUB
+          AS (SELECT CLS_CD,
+                     PRNT_CLS_CD,
+                     CLS_LVL,
+                     COMPANY_CD
+              FROM   EQ0201M
+              WHERE  EQ_CLS = 'EQ_PRCS'
+                     AND CLS_CD IN (${eqNo})
+                     AND COMPANY_CD = #{companyCd}
+              UNION ALL
+              SELECT M.CLS_CD,
+                     M.PRNT_CLS_CD,
+                     M.CLS_LVL,
+                     M.COMPANY_CD
+              FROM   EQ0201M M
+                     JOIN EQ_PRCS_SUB N
+                       ON N.CLS_CD = M.PRNT_CLS_CD AND N.COMPANY_CD = M.COMPANY_CD
+              WHERE  1 = 1)
+        </if>
+        <if test="eqCls == 'EQ_TP'">
+        WITH EQ_TP_SUB
+        AS (SELECT CLS_CD,
+                     PRNT_CLS_CD,
+                     CLS_LVL,
+                     COMPANY_CD
+              FROM   EQ0201M
+              WHERE  EQ_CLS = 'EQ_TP'
+                     AND CLS_CD IN (${eqNo})
+                     AND COMPANY_CD = #{companyCd}
+              UNION ALL
+              SELECT M.CLS_CD,
+                     M.PRNT_CLS_CD,
+                     M.CLS_LVL,
+                     M.COMPANY_CD
+              FROM   EQ0201M M
+                     JOIN EQ_TP_SUB N
+                       ON N.CLS_CD = M.PRNT_CLS_CD AND N.COMPANY_CD = M.COMPANY_CD
+              WHERE  1 = 1)
+        </if>
+        <if test="eqCls == 'EQ_LOC'">
+        WITH EQ_LOC_SUB
+        AS (SELECT CLS_CD,
+                     PRNT_CLS_CD,
+                     CLS_LVL,
+                     COMPANY_CD
+              FROM   EQ0201M
+              WHERE  EQ_CLS = 'EQ_LOC'
+                AND CLS_CD IN (${eqNo})
+                AND  COMPANY_CD = #{companyCd}
+              UNION ALL
+              SELECT M.CLS_CD,
+                     M.PRNT_CLS_CD,
+                     M.CLS_LVL,
+                     M.COMPANY_CD
+              FROM   EQ0201M M
+                     JOIN EQ_LOC_SUB N
+                       ON N.CLS_CD = M.PRNT_CLS_CD AND N.COMPANY_CD = M.COMPANY_CD
+              WHERE  1 = 1)
+        </if>
+        SELECT
+               M.REV_NO
+             , M.COMPANY_CD
+             , M.EQ_NO
+             , M.PRNT_EQ_NO
+             , M.EQ_NM
+             , M.EQ_STS
+             , M.EQ_PRCS
+             , (SELECT CLS_NM FROM EQ0201M WHERE COMPANY_CD = #{companyCd} AND CLS_CD = M.EQ_PRCS) AS EQ_PRCS_NM
+             , M.EQ_TP
+             , (SELECT CLS_NM FROM EQ0201M WHERE COMPANY_CD = #{companyCd} AND CLS_CD = M.EQ_LOC) AS EQ_TP_NM
+             , M.EQ_LOC
+             , (SELECT CLS_NM FROM EQ0201M WHERE COMPANY_CD = #{companyCd} AND CLS_CD = M.EQ_LOC) AS EQ_LOC_NM
+             , M.EQ_GRD
+             , M.EQ_DIV
+             , M.MNFCTR_VNDR
+             , M.MNG_ORG_CD
+             , (SELECT ORG_NM FROM SC_ORG O WHERE COMPANY_CD = #{companyCd} AND O.ORG_CD = M.MNG_ORG_CD) AS MNG_ORG_NM
+             , M.MNFCTR_YMD
+             , M.TAG_NO
+             , M.MODEL_NO
+             , M.SERIAL_NO
+             , M.INST_YMD
+             , M.CMMNT
+             , M.FILE_ATCH_ID
+             , M.EQ_REV_NO
+             , R.EQ_REV_START_YMD
+             , R.EQ_REV_STS
+             , M.MNG_REC_NO
+             , M.MNG_REC_NM
+             , M.SUPPLIER_CD
+             , (SELECT TRADE_NM FROM CO0601M C WHERE C.COMPANY_CD = #{companyCd} AND  C.TRADE_CD = M.SUPPLIER_CD) AS SUPPLIER_NM
+             , M.PLANT_CODE
+             , M.FACTORY_CODE
+             , X.CLS_LVL
+             , M.ASSET_MNG
+             , M.USE_YN
+             , M.FST_REG_USER_ID
+             , M.EQ_LINE
+             , (SELECT CLS_NM FROM EQ0201M WHERE COMPANY_CD = #{companyCd} AND CLS_CD = M.EQ_LINE AND CLS_TYPE = 'E') AS EQ_LINE_NM
+             , (SELECT POWER_EFFICIENT FROM EQ0201M WHERE COMPANY_CD = #{companyCd} AND EQ_CLS = 'EQ_TP' AND CLS_TYPE = 'E' AND CLS_CD = M.EQ_TP) AS POWER_EFFICIENT
+          FROM EQ0101M M
+          LEFT OUTER JOIN EQ0101R R ON (R.EQ_REV_NO = M.EQ_REV_NO AND R.COMPANY_CD = M.COMPANY_CD)
+          LEFT OUTER JOIN EQ0201M X ON (M.EQ_PRCS = X.CLS_CD AND M.COMPANY_CD = X.COMPANY_CD)
+         WHERE M.EQ_DIV = 'E'
+           AND M.COMPANY_CD = #{companyCd}
+         <if test="eqCls == 'EQ_PRCS'">
+           AND M.EQ_PRCS IN (SELECT CLS_CD FROM EQ_PRCS_SUB)
+         </if>
+         <if test="eqCls == 'EQ_TP'">
+           AND M.EQ_TP IN (SELECT CLS_CD FROM EQ_TP_SUB)
+         </if>
+         <if test="eqCls == 'EQ_LOC'">
+           AND M.EQ_LOC IN (SELECT CLS_CD FROM EQ_LOC_SUB)
+         </if>
+         <if test="eqCls != 'EQ_PRCS' &amp;&amp; eqCls != 'EQ_TP' &amp;&amp; eqCls != 'EQ_LOC'">
+           AND M.EQ_NO IN (${eqNo})
+         </if>
+         ORDER BY M.EQ_NO ASC
+    </select>
+
+    <select id="retrieveSpecList" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0101.retrieveSpecList */ ]]>
+        SELECT
+               SEQ_NO
+             , EQ_SPEC_NM
+             , EQ_SPEC_VAL
+             , CMMNT
+             , EQ_SPEC_NO
+             , EQ_NO
+             , COMPANY_CD
+          FROM EQ0102M
+         WHERE COMPANY_CD = #{companyCd}
+           AND EQ_NO = #{eqNo}
+         ORDER BY SEQ_NO ASC
+    </select>
+
+     <insert id="insertEQ0101" parameterType="map" >
+        <![CDATA[ /* eq0101.insertEQ0101 */ ]]>
+        INSERT INTO EQ0101M (
+               REV_NO
+             , EQ_REV_NO
+             , COMPANY_CD
+             , EQ_NO
+             , PRNT_EQ_NO
+             , EQ_NM
+             , ITEM_NO
+             , MNG_ORG_CD
+             , EQ_GRD
+             , EQ_STS
+             , EQ_DIV
+             , EQ_TP
+             , EQ_LOC
+             , EQ_PRCS
+             , MNFCTR_VNDR
+             , MNFCTR_YMD
+             , TAG_NO
+             , MODEL_NO
+             , SERIAL_NO
+             , INST_YMD
+             , CMMNT
+             , FST_REG_USER_ID
+             , FST_REG_DT
+             , FNL_EDIT_USER_ID
+             , FNL_EDIT_DT
+             , FILE_ATCH_ID
+             , MNG_REC_NO
+             , MNG_REC_NM
+             , SUPPLIER_CD
+             , PLANT_CODE
+             , FACTORY_CODE
+             , ASSET_MNG
+             , USE_YN
+             , EQ_LINE
+
+        )
+        VALUES (
+               #{revNo}
+             , #{eqRevNo}
+             , #{companyCd}
+             , #{eqNo}
+             , #{prntEqNo}
+             , #{eqNm}
+             , #{itemNo}
+             , #{mngOrgCd}
+             , #{eqGrd}
+             , #{eqSts}
+             , #{eqDiv}
+             , #{eqTp}
+             , #{eqLoc}
+             , #{eqPrcs}
+             , #{mnfctrVndr}
+             , #{mnfctrYmd}
+             , #{tagNo}
+             , #{modelNo}
+             , ISNULL(#{serialNo}, '')
+             , #{instYmd}
+             , #{cmmnt}
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+             , GETDATE()
+             <if test="fileAtchId == ''">
+             , null
+             </if>
+             <if test="fileAtchId != ''">
+             , #{fileAtchId}
+             </if>
+             , #{mngRecNo}
+             , #{mngRecNm}
+             , #{supplierCd}
+             , #{plantCode}
+             , #{factoryCode}
+             , #{assetMng}
+             , #{useYn}
+             , dbo.FN_NAME(#{eqPrcs},'EQ_LINE_CD')
+        )
+    </insert>
+
+ <!-- 해당 설비ID정보 수정 -->
+    <update id="updateEQ0101" parameterType="map" >
+        <![CDATA[ /* eq0101.updateEQ0101 */ ]]>
+        UPDATE EQ0101M
+           SET
+               PRNT_EQ_NO        = #{prntEqNo}
+             , EQ_NM             = #{eqNm}
+             , MNG_ORG_CD        = #{mngOrgCd}
+             , EQ_GRD            = #{eqGrd}
+             , EQ_STS            = #{eqSts}
+             , EQ_TP             = #{eqTp}
+             , EQ_LOC            = #{eqLoc}
+             , EQ_PRCS           = #{eqPrcs}
+             , MNFCTR_VNDR       = #{mnfctrVndr}
+             , MNFCTR_YMD        = #{mnfctrYmd}
+             , TAG_NO            = #{tagNo}
+             , MODEL_NO          = #{modelNo}
+             , SERIAL_NO         = #{serialNo}
+             , INST_YMD          = #{instYmd}
+             , CMMNT             = #{cmmnt}
+             <if test="fileAtchId == ''">
+             , FILE_ATCH_ID     = null
+             </if>
+             <if test="fileAtchId != ''">
+             , FILE_ATCH_ID     = #{fileAtchId}
+             </if>
+             , FNL_EDIT_DT       = GETDATE()
+             , FNL_EDIT_USER_ID  = #{fnlEditUserId}
+             , EQ_REV_NO        = #{eqRevNo}
+             , MNG_REC_NO       = #{mngRecNo}
+             , MNG_REC_NM       = #{mngRecNm}
+             , SUPPLIER_CD      = #{supplierCd}
+             , PLANT_CODE       = #{plantCode}
+             , FACTORY_CODE         = #{factoryCode}
+             , EQ_LINE         = dbo.FN_NAME(#{eqPrcs},'EQ_LINE_CD')
+         WHERE REV_NO            = #{revNo}
+           AND EQ_NO             = #{eqNo}
+           AND COMPANY_CD        = #{companyCd}
+    </update>
+
+    <!-- 해당 설비ID 삭제 -->
+    <delete id="deleteEQ0101" parameterType="map" >
+        <![CDATA[ /* eq0101.deleteEQ0101 */ ]]>
+        DELETE
+          FROM EQ0101M
+         WHERE REV_NO  = #{revNo}
+           AND EQ_NO = #{eqNo}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+
+    <!-- 스펙 정보 저장  -->
+    <insert id="insertSpec" parameterType="map" >
+        <![CDATA[ /* eq0101.insertSpec */ ]]>
+        INSERT INTO EQ0102M (
+               EQ_NO
+             , COMPANY_CD
+             , EQ_SPEC_NO
+             , SEQ_NO
+             , EQ_SPEC_NM
+             , EQ_SPEC_VAL
+             , CMMNT
+             , ARRAY_ORD
+             , FST_REG_USER_ID
+             , FST_REG_DT
+             , FNL_EDIT_USER_ID
+             , FNL_EDIT_DT
+        )
+        VALUES (
+               #{eqNo}
+             , #{companyCd}
+             , #{eqSpecNo}
+             , #{seqNo}
+             , #{eqSpecNm}
+             , #{eqSpecVal}
+             , #{cmmnt}
+             , #{arrayOrd}
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+             , GETDATE()
+        )
+    </insert>
+
+    <!-- 해당 스펙ID 수정 -->
+    <update id="updateSpec" parameterType="map" >
+        <![CDATA[ /* eq0101.updateSpec */ ]]>
+        UPDATE EQ0102M
+           SET
+               SEQ_NO            = #{seqNo}
+             , EQ_SPEC_NM        = #{eqSpecNm}
+             , EQ_SPEC_VAL       = #{eqSpecVal}
+             , CMMNT             = #{cmmnt}
+             , ARRAY_ORD         = #{arrayOrd}
+             , FNL_EDIT_DT       = GETDATE()
+             , FNL_EDIT_USER_ID  = #{fnlEditUserId}
+         WHERE EQ_SPEC_NO        = #{eqSpecNo}
+           AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <!-- 해당 스펙ID 삭제 -->
+    <delete id="deleteSpec" parameterType="map" >
+        <![CDATA[ /* eq0101.deleteSpec */ ]]>
+        DELETE
+          FROM EQ0102M
+         WHERE EQ_SPEC_NO = #{eqSpecNo}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+
+    <select id="retrieveWoHist" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0101.retrieveWoHist */ ]]>
+        SELECT
+               START_YMD
+             , END_YMD
+             , WO_NO
+             , WO_NM
+			 , PLAN_ORG_CD
+			 , (SELECT ORG_NM FROM SC_ORG WHERE ORG_CD = PLAN_ORG_CD AND COMPANY_CD = #{companyCd}) AS PLAN_ORG_NM
+			 , ORG_CD
+			 , (SELECT ORG_NM FROM SC_ORG WHERE ORG_CD = M.ORG_CD AND COMPANY_CD = #{companyCd}) AS ORG_NM
+             , CMMNT
+             , WO_STS
+			 , WORK_USER_ID
+			 , (SELECT USER_NM FROM SC_USER WHERE COMPANY_CD = #{companyCd} AND USER_ID = M.WORK_USER_ID ) AS WORK_USER_NM
+			 , EQ_GRD
+			 , EQ_NO
+			 , COMPANY_CD
+          FROM WO0201M M
+         WHERE EQ_NO = #{eqNo}
+           AND COMPANY_CD = #{companyCd}
+         ORDER BY START_YMD DESC, WO_NO DESC
+    </select>
+
+    <select id="retrieveEqHist" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0101.retrieveEqHist */ ]]>
+        SELECT
+               INPUT_NO
+             , INPUT_NM
+             , COMPANY_CD
+             , EQ_NO
+             , ORG_CD
+             , dbo.FN_NAME(ORG_CD   ,'DEPT') ORG_NM
+             , WORK_USER_ID
+             , dbo.FN_NAME(WORK_USER_ID,'USER') WORK_USER_NM
+             , WORK_DESC
+             , START_YMD
+             , START_TIME
+             , END_YMD
+             , END_TIME
+             , FILE_ATCH_ID
+          FROM WO0401M
+         WHERE EQ_NO = #{eqNo}
+           AND COMPANY_CD = #{companyCd}
+         ORDER BY START_YMD DESC, INPUT_NO DESC
+    </select>
+
+    <select id="retrieveEqStd" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0101.retrieveEqStd */ ]]>
+           SELECT
+                  STD_NO
+                , (SELECT STD_NM
+                     FROM CO0501M
+                    WHERE STD_NO=x.STD_NO
+                      AND COMPANY_CD = #{companyCd}
+                  ) STD_NM
+                , CMMNT
+                , EQ_NO
+                , COMPANY_CD
+                , STD_NO   OLD_STD_NO
+             FROM EQ0105M x
+            WHERE X.EQ_NO = #{eqNo}
+              AND X.COMPANY_CD = #{companyCd}
+    </select>
+
+  <!-- 설비이력 정보 저장  -->
+    <insert id="insertEqStd" parameterType="map" >
+        <![CDATA[ /* eq0101.insertEqStd */ ]]>
+        INSERT INTO EQ0105M (
+               EQ_NO
+             , COMPANY_CD
+             , STD_NO
+             , CMMNT
+             , FST_REG_USER_ID
+             , FST_REG_DT
+        )
+        VALUES (
+               #{eqNo}
+             , #{companyCd}
+             , #{stdNo}
+             , #{cmmnt}
+             , #{fstRegUserId}
+             , GETDATE()
+        )
+    </insert>
+
+ <!-- 해당 설비ID 수정 -->
+    <update id="updateEqStd" parameterType="map" >
+        <![CDATA[ /* eq0101.updateEqStd */ ]]>
+        UPDATE EQ0105M
+           SET
+               STD_NO        = #{stdNo}
+             , CMMNT         = #{cmmnt}
+             , FNL_EDIT_DT       = GETDATE()
+             , FNL_EDIT_USER_ID  = #{fnlEditUserId}
+         WHERE STD_NO            = #{oldStdNo}
+           AND EQ_NO             = #{eqNo}
+           AND COMPANY_CD        = #{companyCd}
+    </update>
+
+    <!-- 해당 설비이력ID 삭제 -->
+    <delete id="deleteEqStd" parameterType="map" >
+        <![CDATA[ /* eq0101.deleteEqStd */ ]]>
+        DELETE
+          FROM EQ0105M
+         WHERE STD_NO = #{stdNo}
+           AND EQ_NO  = #{eqNo}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+
+    <!-- 점검이력 TAB 조회 -->
+    <select id="retrieveInspectionHistory" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0101.retrieveInspectionHistory */ ]]>
+        SELECT
+               X.CHK_NO
+             , X.COMPANY_CD
+             , X.ORG_CD
+             , dbo.FN_NAME(X.ORG_CD, 'DEPT') ORG_CD_DESC
+             , M.ACTL_YMD
+             , X.CYCLE_CD
+             , X.CYCLE_TP
+             , (X.CYCLE_CD + ' ' + dbo.FN_NAME(X.CYCLE_TP, 'PERIOD_TYPE')) CYCLE_DESC
+             , M.CMPLT_YN
+             , CASE WHEN M.CMPLT_YN = 'Y' THEN M.CMPL_YMD ELSE '' END CMPL_YMD
+             , CASE WHEN M.CMPLT_YN =  'Y' THEN CONVERT(VARCHAR,COUNT(DISTINCT R.CHK_RSLT_NO))
+			   ELSE
+					CASE WHEN COUNT(DISTINCT R.CHK_RSLT_NO) = 0 THEN CONVERT(VARCHAR,COUNT(DISTINCT C1.CHK_DTL_NO))
+					ELSE CONCAT(COUNT(DISTINCT R.CHK_RSLT_NO),' of ',COUNT(DISTINCT C1.CHK_DTL_NO)) END
+				END RESULT_COUNT
+			 , R.CHK_USER_ID
+			 , (SELECT USER_NM FROM SC_USER WHERE COMPANY_CD = #{companyCd} AND USER_ID = R.CHK_USER_ID) AS CHK_USER_NM
+          FROM IN0201M X
+		 INNER JOIN EQ0101M Y ON (Y.EQ_NO = X.EQ_NO AND Y.COMPANY_CD = X.COMPANY_CD)
+		 INNER JOIN IN0401M M ON (M.CHK_NO = X.CHK_NO AND X.COMPANY_CD = M.COMPANY_CD)
+		  LEFT OUTER JOIN IN0201D C1 ON (C1.CHK_NO = X.CHK_NO AND C1.COMPANY_CD = X.COMPANY_CD)
+		  LEFT OUTER JOIN IN0401D R ON (R.CHK_SCHD_NO = M.CHK_SCHD_NO AND R.COMPANY_CD = M.COMPANY_CD)
+         WHERE Y.REV_NO = #{revNo}
+           AND X.COMPANY_CD = #{companyCd}
+           AND X.DAY_YN = 'N'
+           AND X.CHK_NO = #{chkNo}
+       <if test="fStartDate != null &amp;&amp; fStartDate != ''">
+           AND M.ACTL_YMD <![CDATA[ >= ]]> #{fStartDate}
+       </if>
+       <if test="fEndDate != null &amp;&amp; fEndDate != ''">
+           AND M.ACTL_YMD <![CDATA[ <= ]]> #{fEndDate}
+       </if>
+         GROUP BY X.COMPANY_CD, X.ORG_CD, Y.EQ_NO, Y.ITEM_NO, Y.EQ_NM, X.CHK_NO, X.CHK_NM, X.CYCLE_CD, X.CYCLE_TP, M.CHK_SCHD_NO, M.ACTL_YMD, M.CMPLT_YN, M.CMPL_YMD, R.CHK_USER_ID
+         ORDER BY M.ACTL_YMD DESC
+    </select>
+
+    <!-- 점검이력 TAB 마스터조회 -->
+    <select id="retrieveInspection" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0101.retrieveInspection */ ]]>
+        SELECT
+               X.CHK_NO
+             , X.COMPANY_CD
+             , X.CHK_NM
+             , Y.ITEM_NO
+             , Y.EQ_NM
+             , X.CHK_TP
+             , X.CYCLE_CD
+             , X.CYCLE_TP
+             , (X.CYCLE_CD + ' ' + dbo.FN_NAME(X.CYCLE_TP, 'PERIOD_TYPE')) CYCLE_DESC
+             , X.ORG_CD
+             , dbo.FN_NAME(X.ORG_CD, 'DEPT') ORG_CD_DESC
+             , X.EQ_NO
+             , X.CAL_CD
+             , X.ACT_YN
+             , X.DAY_YN
+             , X.LAST_CHK_YMD
+             , X.DAY_WEEK
+             , X.CHK_DIV
+             , (SELECT COMM_CD_NM FROM SC_COMM_CD WHERE COMM_CD = X.CHK_DIV) CHK_DIV_DESC
+          FROM IN0201M X
+         INNER JOIN EQ0101M Y ON (X.EQ_NO = Y.EQ_NO AND X.COMPANY_CD = Y.COMPANY_CD)
+         WHERE X.COMPANY_CD = #{companyCd}
+           AND Y.REV_NO = #{revNo}
+           AND X.EQ_NO = #{eqNo}
+         ORDER BY X.CHK_NO DESC
+     </select>
+
+    <!-- 설비마스터 - BOM 조회 -->
+    <select id="retrieveBomList" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0101.retrieveBomList */ ]]>
+        SELECT
+               B.BOM_NO
+             , B.COMPANY_CD
+             , B.EQ_NO
+             , B.PART_CD
+             , Y.PART_NM
+             , Y.UNIT_COST
+             , Y.UNIT_CD
+          FROM EQ0101M M
+          LEFT OUTER JOIN EQ0101R R ON (R.EQ_REV_NO = M.EQ_REV_NO AND R.COMPANY_CD = M.COMPANY_CD)
+          LEFT OUTER JOIN EQ0201M X ON (M.EQ_PRCS = X.CLS_CD AND M.COMPANY_CD = X.COMPANY_CD)
+		  INNER JOIN EQ0106B B ON (M.EQ_NO = B.EQ_NO AND M.COMPANY_CD = B.COMPANY_CD)
+		 INNER JOIN PT0101M Y ON (B.PART_CD = Y.PART_CD AND B.COMPANY_CD = Y.COMPANY_CD)
+         WHERE M.EQ_DIV = 'E'
+           AND M.COMPANY_CD = #{companyCd}
+           AND M.EQ_LINE IN (#{eqPrcs})
+         ORDER BY M.EQ_NO ASC
+    </select>
+
+    <select id="retrieveBomListN" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0101.retrieveBomList */ ]]>
+        SELECT
+               X.BOM_NO
+             , X.COMPANY_CD
+             , X.EQ_NO
+             , X.PART_CD
+             , Y.PART_NM
+             , Y.UNIT_COST
+             , Y.UNIT_CD
+          FROM EQ0106B X
+         INNER JOIN PT0101M Y ON (Y.PART_CD = X.PART_CD AND X.COMPANY_CD = Y.COMPANY_CD)
+         WHERE X.EQ_NO = #{eqNo}
+           AND X.COMPANY_CD = #{companyCd}
+    </select>
+
+    <!-- BOM 등록 -->
+    <insert id="insertBom" parameterType="map" >
+     <![CDATA[ /* eq0101.insertBom */ ]]>
+     INSERT INTO EQ0106B (
+            BOM_NO
+          , COMPANY_CD
+          , EQ_NO
+          , PART_CD
+          , FST_REG_USER_ID
+          , FST_REG_DT
+          , FNL_EDIT_USER_ID
+          , FNL_EDIT_DT
+     )
+     VALUES (
+            NEXT VALUE FOR DBO.SQEQ_BOM_NO_01
+          , #{companyCd}
+          , #{eqNo}
+          , #{partCd}
+          , #{fstRegUserId}
+          , GETDATE()
+          , #{fstRegUserId}
+          , GETDATE()
+     )
+    </insert>
+
+    <!-- BOM 수정 -->
+    <update id="updateBom" parameterType="map" >
+        <![CDATA[ /* eq0101.updateBom */ ]]>
+        UPDATE EQ0106B
+           SET
+               PART_CD            = #{partCd}
+             , FNL_EDIT_DT       = GETDATE()
+             , FNL_EDIT_USER_ID  = #{fnlEditUserId}
+         WHERE BOM_NO        = #{bomNo}
+           AND COMPANY_CD    = #{companyCd}
+    </update>
+
+    <!-- BOM 삭제 -->
+    <delete id="deleteBom" parameterType="map" >
+        <![CDATA[ /* eq0101.deleteBom */ ]]>
+        DELETE
+          FROM EQ0106B
+         WHERE BOM_NO = #{bomNo}
+           AND COMPANY_CD    = #{companyCd}
+    </delete>
+
+    <select id="retrieveEQ0101RList" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0101.retrieveEQ0101RList */ ]]>
+        SELECT
+               R.REV_NO
+             , R.EQ_REV_SEQ
+             , R.EQ_REV_NO
+             , CONVERT(VARCHAR,R.EQ_REV_START_YMD,120) AS EQ_REV_START_YMD
+             , R.EQ_REV_STS
+             , DBO.FN_NAME(R.EQ_REV_STS,'EQ_REV_STS') AS EQ_REV_STS_NM
+             , R.COMPANY_CD
+             , R.EQ_NO
+             , R.PRNT_EQ_NO
+             , R.EQ_NM
+             , R.EQ_STS
+             , DBO.FN_NAME(R.EQ_STS,'EQ_STS') AS EQ_STS_NM
+             , R.EQ_PRCS
+             , DBO.FN_NAME(R.EQ_PRCS,'EQ_PRCS') AS EQ_PRCS_NM
+             , R.EQ_TP
+             , DBO.FN_NAME(R.EQ_TP,'EQ_TP') AS EQ_TP_NM
+             , R.EQ_LOC
+             , DBO.FN_NAME(R.EQ_LOC,'EQ_LOC') AS EQ_LOC_NM
+             , R.EQ_GRD
+             , DBO.FN_NAME(R.EQ_GRD,'EQ_GRD') AS EQ_GRD_NM
+             , R.EQ_DIV
+             , DBO.FN_NAME(R.EQ_DIV,'EQ_DIV') AS EQ_DIV_NM
+             , R.MNFCTR_VNDR
+             , R.MNG_ORG_CD
+             , (SELECT ORG_NM FROM SC_ORG O WHERE O.COMPANY_CD = #{companyCd} AND O.ORG_CD = R.MNG_ORG_CD) AS MNG_ORG_NM
+             , R.MNFCTR_YMD
+             , R.TAG_NO
+             , R.MODEL_NO
+             , R.SERIAL_NO
+             , R.INST_YMD
+             , R.CMMNT
+             , R.FILE_ATCH_ID
+             , R.MNG_REC_NO
+             , R.MNG_REC_NM
+             , R.SUPPLIER_CD
+             , (SELECT TRADE_NM FROM CO0601M C WHERE C.COMPANY_CD = #{companyCd} AND C.TRADE_CD = R.SUPPLIER_CD) AS SUPPLIER_NM
+             , R.PLANT_CODE
+             , R.FACTORY_CODE
+             , R.FST_REG_USER_ID
+             , CONVERT(VARCHAR,R.FST_REG_DT,120) AS FST_REG_DT
+             , R.USE_YN
+             , R.ASSET_MNG
+             , R.EQ_LINE
+          FROM EQ0101R R
+         WHERE REV_NO = #{revNo}
+           AND EQ_NO = #{eqNo}
+           AND COMPANY_CD = #{companyCd}
+         ORDER BY CONVERT(INT,R.EQ_REV_SEQ) DESC
+    </select>
+
+    <insert id="insertEQ0101R" parameterType="map">
+        <![CDATA[ /* eq0101.insertEQ0101R */ ]]>
+        INSERT INTO EQ0101R (
+               REV_NO
+             , EQ_REV_NO
+             , EQ_REV_SEQ
+             , EQ_REV_STS
+             , EQ_REV_START_YMD
+             , COMPANY_CD
+             , EQ_NO
+             , PRNT_EQ_NO
+             , EQ_NM
+             , ITEM_NO
+             , MNG_ORG_CD
+             , EQ_GRD
+             , EQ_STS
+             , EQ_DIV
+             , EQ_TP
+             , EQ_LOC
+             , EQ_PRCS
+             , MNFCTR_VNDR
+             , MNFCTR_YMD
+             , TAG_NO
+             , MODEL_NO
+             , SERIAL_NO
+             , INST_YMD
+             , CMMNT
+             , FST_REG_USER_ID
+             , FST_REG_DT
+             , FNL_EDIT_USER_ID
+             , FNL_EDIT_DT
+             , FILE_ATCH_ID
+             , MNG_REC_NO
+             , MNG_REC_NM
+             , SUPPLIER_CD
+             , PLANT_CODE
+             , FACTORY_CODE
+             , ASSET_MNG
+             , USE_YN
+             , EQ_LINE
+        )
+        VALUES (
+               #{revNo}
+             , #{eqRevNo}
+             , #{eqRevSeq}
+             , #{eqRevSts}
+             <if test="eqRevSts == '30'">
+             , GETDATE()
+             </if>
+             <if test="eqRevSts != '30'">
+             , #{eqRevStartYmd}
+             </if>
+             , #{companyCd}
+             , #{eqNo}
+             , #{prntEqNo}
+             , #{eqNm}
+             , #{itemNo}
+             , #{mngOrgCd}
+             , #{eqGrd}
+             , #{eqSts}
+             , #{eqDiv}
+             , #{eqTp}
+             , #{eqLoc}
+             , #{eqPrcs}
+             , #{mnfctrVndr}
+             , #{mnfctrYmd}
+             , #{tagNo}
+             , #{modelNo}
+             , ISNULL(#{serialNo}, '')
+             , #{instYmd}
+             , #{cmmnt}
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+             , GETDATE()
+             <if test="fileAtchId == ''">
+             , null
+             </if>
+             <if test="fileAtchId != ''">
+             , #{fileAtchId}
+             </if>
+             , #{mngRecNo}
+             , #{mngRecNm}
+             , #{supplierCd}
+             , #{plantCode}
+             , #{factoryCode}
+             , #{assetMng}
+             , #{useYn}
+             , dbo.FN_NAME(#{eqPrcs},'EQ_LINE_CD')
+        )
+    </insert>
+
+    <select id="retrieveEqRevSeqNextValue" parameterType="map" resultType="String" >
+    	<![CDATA[ /* eq0101.retrieveEqRevSeqNextValue */ ]]>
+    	SELECT NEXT VALUE FOR DBO.EQ_REV_SEQ_01 AS EQ_REV_SEQ
+    </select>
+    <select id="retrieveEqRevNoNextValue" parameterType="map" resultType="String" >
+    	<![CDATA[ /* eq0101.retrieveEqRevNoNextValue */ ]]>
+    	SELECT NEXT VALUE FOR DBO.EQ_REV_NO_SEQ_01 AS EQ_REV_NO
+    </select>
+
+    <select id="retrieveEQ0102RList" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0101.retrieveEQ0102RList */ ]]>
+        SELECT
+               SEQ_NO
+             , EQ_REV_SEQ
+             , EQ_SPEC_NM
+             , EQ_SPEC_VAL
+             , CMMNT
+             , EQ_SPEC_NO
+             , EQ_NO
+             , COMPANY_CD
+          FROM EQ0102R
+         WHERE EQ_REV_SEQ = #{eqRevSeq}
+           AND COMPANY_CD = #{companyCd}
+         ORDER BY SEQ_NO ASC
+    </select>
+
+    <select id="retrieveEqSpecNoNextValue" parameterType="map" resultType="String" >
+    	<![CDATA[ /* eq0101.retrieveEqSpecNoNextValue */ ]]>
+    	SELECT NEXT VALUE FOR DBO.SQEQ_SPEC_NO_01 AS EQ_SPEC_NO
+    </select>
+
+    <!-- 리비전 스펙 정보 저장  -->
+    <insert id="insertEQ0102R" parameterType="map" >
+        <![CDATA[ /* eq0101.insertEQ0102R */ ]]>
+        INSERT INTO EQ0102R (
+               EQ_NO
+             , COMPANY_CD
+             , EQ_REV_SEQ
+             , EQ_SPEC_NO
+             , SEQ_NO
+             , EQ_SPEC_NM
+             , EQ_SPEC_VAL
+             , CMMNT
+             , FST_REG_USER_ID
+             , FST_REG_DT
+             , FNL_EDIT_USER_ID
+             , FNL_EDIT_DT
+        )
+        VALUES (
+               #{eqNo}
+             , #{companyCd}
+             , #{eqRevSeq}
+             , #{eqSpecNo}
+             , #{seqNo}
+             , #{eqSpecNm}
+             , #{eqSpecVal}
+             , #{cmmnt}
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+             , GETDATE()
+        )
+    </insert>
+
+    <!-- 설비 공통규격 조회  -->
+    <select id="retrieveEQ0108MList" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0101.retrieveEQ0108MList */ ]]>
+        SELECT
+               EQ_NO
+        	 , MNFCTR_COST
+        	 , MNFCTR_COST_CD
+        	 , EQ_WEIGHT
+        	 , PHASE_DIV
+        	 , VOLTAGE
+        	 , POWER_CONSUM
+        	 , HORIZONTAL
+        	 , VERTICAL
+        	 , SQUARE_METER
+        	 , REMARKS
+        	 , COMPANY_CD
+          FROM EQ0108M
+         WHERE EQ_NO = #{eqNo}
+           AND COMPANY_CD = #{companyCd}
+    </select>
+
+     <!-- 설비 리비전 공통규격 조회  -->
+    <select id="retrieveEQ0108RList" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0101.retrieveEQ0108RList */ ]]>
+        SELECT
+               EQ_NO
+        	 , EQ_REV_SEQ
+        	 , MNFCTR_COST
+        	 , MNFCTR_COST_CD
+        	 , EQ_WEIGHT
+        	 , PHASE_DIV
+        	 , VOLTAGE
+        	 , POWER_CONSUM
+        	 , HORIZONTAL
+        	 , VERTICAL
+        	 , SQUARE_METER
+        	 , REMARKS
+        	 , COMPANY_CD
+          FROM EQ0108R
+         WHERE EQ_NO = #{eqNo}
+           AND COMPANY_CD = #{companyCd}
+           AND EQ_REV_SEQ = #{eqRevSeq}
+    </select>
+
+    <!-- 설비 공통규격 리비전 정보 저장  -->
+    <insert id="insertEQ0108R" parameterType="map" >
+        <![CDATA[ /* eq0101.insertEQ0108R */ ]]>
+        INSERT INTO EQ0108R (
+               EQ_NO
+             , COMPANY_CD
+             , EQ_REV_SEQ
+             , MNFCTR_COST
+             , MNFCTR_COST_CD
+             , EQ_WEIGHT
+             , PHASE_DIV
+             , VOLTAGE
+             , POWER_CONSUM
+             , HORIZONTAL
+             , VERTICAL
+             , SQUARE_METER
+             , REMARKS
+             , FST_REG_USER_ID
+             , FST_REG_DT
+             , FNL_EDIT_USER_ID
+             , FNL_EDIT_DT
+        )
+        VALUES (
+               #{eqNo}
+             , #{companyCd}
+             , #{eqRevSeq}
+             , #{mnfctrCost}
+             , #{mnfctrCostCd}
+             , #{eqWeight}
+             , #{phaseDiv}
+             , #{voltage}
+             , #{powerConsum}
+             , #{horizontal}
+             , #{vertical}
+             , #{squareMeter}
+             , #{remarks}
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserID}
+             , GETDATE()
+        )
+    </insert>
+
+    <!-- 설비 공통규격 정보 저장  -->
+    <insert id="insertEQ0108M" parameterType="map" >
+        <![CDATA[ /* eq0101.insertEQ0108M */ ]]>
+        INSERT INTO EQ0108M (
+               EQ_NO
+             , COMPANY_CD
+             , MNFCTR_COST
+             , MNFCTR_COST_CD
+             , EQ_WEIGHT
+             , PHASE_DIV
+             , VOLTAGE
+             , POWER_CONSUM
+             , HORIZONTAL
+             , VERTICAL
+             , SQUARE_METER
+             , REMARKS
+             , FST_REG_USER_ID
+             , FST_REG_DT
+             , FNL_EDIT_USER_ID
+             , FNL_EDIT_DT
+        )
+        VALUES (
+               #{eqNo}
+             , #{companyCd}
+             , #{mnfctrCost}
+             , #{mnfctrCostCd}
+             , #{eqWeight}
+             , #{phaseDiv}
+             , #{voltage}
+             , #{powerConsum}
+             , #{horizontal}
+             , #{vertical}
+             , #{squareMeter}
+             , #{remarks}
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserID}
+             , GETDATE()
+        )
+    </insert>
+
+
+    <select id="retrieveSpecItemList" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0101.retrieveSpecItemList */ ]]>
+        SELECT
+               SEQ_NO
+             , SPEC_DTL_NO AS EQ_SPEC_NO
+             , SPEC_DESC AS EQ_SPEC_NM
+          FROM CO0101D
+         WHERE SPEC_NO = #{specNo}
+           AND COMPANY_CD = #{companyCd}
+         ORDER BY SEQ_NO
+    </select>
+
+    <select id="retrieveEQ0101Detail" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0101.retrieveEQ0101Detail */ ]]>
+        SELECT
+               X.PRNT_EQ_NO
+             , X.EQ_NM + ' [' + X.EQ_NO + ']' AS EQ_NO
+             , ASSET_MNG
+             , PLANT_CODE
+             , FACTORY_CODE
+             , DBO.FN_NAME(X.EQ_PRCS, 'EQ_PRCS') + ' [' + X.EQ_PRCS + ']' AS EQ_PRCS
+             , DBO.FN_NAME(X.EQ_TP, 'EQ_TP') + ' [' + X.EQ_TP + ']' AS EQ_TP
+             , DBO.FN_NAME(X.EQ_LOC, 'EQ_LOC') + ' [' + X.EQ_TP + ']' AS EQ_LOC
+             , X.EQ_GRD
+             , X.EQ_STS
+             , X.MNFCTR_VNDR
+             , DBO.FN_NAME(X.MNG_ORG_CD, 'DEPT') + ' [' + X.MNG_ORG_CD + ']' AS MNG_ORG_CD
+             , X.MODEL_NO
+             , X.SERIAL_NO
+             , X.MNFCTR_YMD
+             , X.INST_YMD
+             , X.MNG_REC_NM + ' [' + X.MNG_REC_NO + ']' AS MNG_REC_NO
+             , DBO.FN_NAME(X.SUPPLIER_CD, 'DEPT') + ' [' + X.SUPPLIER_CD + ']' AS SUPPLIER_CD
+             , X.CMMNT
+             , X.USE_YN
+             , X.COMPANY_CD
+          FROM EQ0101R X
+         WHERE EQ_REV_SEQ = #{eqRevSeq}
+           AND COMPANY_CD = #{companyCd}
+           AND EQ_DIV = 'E'
+    </select>
+
+    <delete id="deleteEQ0101R" parameterType="map" >
+        <![CDATA[ /* eq0101.deleteEQ0101R */ ]]>
+        DELETE
+          FROM EQ0101R
+         WHERE EQ_REV_SEQ = #{eqRevSeq}
+           AND EQ_DIV = #{eqDiv}
+           AND EQ_NO = #{eqNo}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+    <delete id="deleteEQ0102R" parameterType="map" >
+        <![CDATA[ /* eq0101.deleteEQ0101R */ ]]>
+        DELETE
+          FROM EQ0102R
+         WHERE EQ_REV_SEQ = #{eqRevSeq}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+    <delete id="deleteEQ0108R" parameterType="map" >
+        <![CDATA[ /* eq0101.deleteEQ0101R */ ]]>
+        DELETE
+          FROM EQ0108R
+         WHERE EQ_REV_SEQ = #{eqRevSeq}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+
+
+</mapper>

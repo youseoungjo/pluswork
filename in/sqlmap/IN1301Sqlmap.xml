@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : 담당자별 예방점검 조회
+* Description : 담당자별 예방점검 조회
+* Author : sds
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveIN1301List    : 담당자별 예방점검 조회
+*************************************************************************************-->
+<mapper namespace="in1301">
+    <!-- 담당자별 예방점검 조회-->
+    <select id="retrieveIN1301List" parameterType="map" resultType="map" >
+        <![CDATA[ /* in1301.retrieveIN1301 */ ]]>
+        SELECT
+               PH.USER_ID
+             , DBO.FN_NAME(PH.USER_ID, 'USER') AS USER_NM
+             , CH.EQ_NO
+             , (SELECT EQ_LOC FROM EQ0101M WHERE EQ_PRCS = (SELECT EQ_LINE FROM EQ0101M WHERE EQ_NO = CH.EQ_NO)) AS EQ_LINE
+             , (SELECT CLS_NM FROM EQ0201M WHERE CLS_CD = (SELECT EQ_LINE FROM EQ0101M WHERE EQ_NO = CH.EQ_NO)) AS EQ_LINE_NM
+             , CH.CHK_NM
+             , CH.CHK_NO
+             , RH.ACTL_YMD
+             , RH.CHK_SCHD_NO
+             , CASE WHEN RH.CMPLT_YN = 'Y' THEN (SELECT MAX(CHK_YMD) CHK_YMD FROM IN0401D WHERE CHK_SCHD_NO = RH.CHK_SCHD_NO)
+                    ELSE '' END AS CHK_YMD
+             , CASE WHEN RH.CMPLT_YN = 'Y' THEN '완료'
+                    ELSE '미점검' END AS CMPLT_YN
+          FROM IN0201P PH
+         INNER JOIN IN0201M CH ON (PH.CHK_NO = CH.CHK_NO)
+         INNER JOIN IN0401M RH ON (CH.CHK_NO = RH.CHK_NO)
+         WHERE 1=1
+         <if test="fStartActlDate != null &amp;&amp; fStartActlDate != ''">
+           AND RH.ACTL_YMD >= #{fStartActlDate}
+        </if>
+        <if test="fEndActlDate != null &amp;&amp; fEndActlDate != ''">
+           AND RH.ACTL_YMD <![CDATA[<=]]> #{fEndActlDate}
+        </if>
+        <if test="fUserId != null &amp;&amp; fUserId != ''">
+           AND PH.USER_ID = #{fUserId}
+        </if>
+        <if test="fLineNm != null &amp;&amp; fLineNm != ''">
+           AND ((SELECT EQ_LOC FROM EQ0101M WHERE EQ_PRCS = (SELECT EQ_LINE FROM EQ0101M WHERE EQ_NO = CH.EQ_NO)) LIKE '%' + #{fLineNm} + '%'
+           OR (SELECT CLS_NM FROM EQ0201M WHERE CLS_CD = (SELECT EQ_LINE FROM EQ0101M WHERE EQ_NO = CH.EQ_NO)) LIKE '%' + #{fLineNm} + '%')
+        </if>
+        <if test="fchkNm != null &amp;&amp; fchkNm != ''">
+           AND (CH.CHK_NO LIKE '%' + #{fchkNm} + '%'
+           OR CH.CHK_NM LIKE '%' + #{fchkNm} + '%')
+        </if>
+        <if test='fcmpltYn != null &amp;&amp; !fcmpltYn.equals("A")'>
+          <if test='fcmpltYn.equals("Y")'>
+           AND RH.CMPLT_YN = 'Y'
+          </if>
+          <if test='fcmpltYn.equals("N")'>
+           AND RH.CMPLT_YN = 'N'
+          </if>
+        </if>
+
+         ORDER BY PH.USER_ID ASC
+
+    </select>
+
+</mapper>

@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : Code
+* Description : 0301업코드
+* Author :
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveCO0401List : 0301업코드목록 조회
+* insertCO0401 : 0301업코드목록 추가
+* updateCO0401 : 0301업코드목록 수정
+* deleteCO0401 : 0301업코드목록 삭제
+*************************************************************************************-->
+<mapper namespace="co0401">
+    <select id="retrieveTradeList" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0401.retrieveTradeList */ ]]>
+        SELECT
+               TRADE_CD
+             , TRADE_NM
+             , COMPANY_CD
+             , TRADE_SNM
+             , TRADE_ENM
+             , TRADE_DIV
+             , PRESIDENT_NM
+             , TEL_NO
+             , EMAIL
+             , MANAGE_NM
+             , MANAGE_TEL_NO
+             , MANAGE_EMAIL
+             , BUSINESS_NO
+             , TRADE_START_YMD
+             , FAX_NO
+             , POST_NO
+             , ADDR
+             , TRADE_URL
+             , BUSINESS_TYPE
+             , BUSINESS_CLS
+             , CORPORATE_NO
+             , USE_YN
+          FROM CO0601M
+         WHERE 1= 1
+           AND COMPANY_CD = #{companyCd}
+        <if test="tradeNmS != null &amp;&amp; tradeNmS != ''">
+          AND (UPPER(TRADE_CD) LIKE '%'  +  UPPER(#{tradeNmS})  +  '%' OR UPPER(TRADE_NM) LIKE '%'  +  UPPER(#{tradeNmS})  +  '%' )
+        </if>
+        <if test="tradeDivS != null &amp;&amp; tradeDivS != ''">
+          AND TRADE_DIV = #{tradeDivS}
+        </if>
+         ORDER BY TRADE_DIV DESC, TRADE_CD
+    </select>
+
+    <select id="checkTradeNm" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0401.checkTradeNm */ ]]>
+        SELECT
+               COUNT(TRADE_NM)
+          FROM CO0601M
+         WHERE 1= 1
+           AND COMPANY_CD = #{companyCd}
+           AND TRADE_NM = #{tradeNm}
+    </select>
+
+    <insert id="insertCO0401" parameterType="map" >
+        <![CDATA[ /* co0401.insertCO0401 */ ]]>
+        INSERT INTO CO0601M (
+               TRADE_CD
+             , TRADE_NM
+             , COMPANY_CD
+             , TRADE_SNM
+             , TRADE_ENM
+             , TRADE_DIV
+             , PRESIDENT_NM
+             , TEL_NO
+             , EMAIL
+             , MANAGE_NM
+             , MANAGE_TEL_NO
+             , MANAGE_EMAIL
+             , BUSINESS_NO
+             , TRADE_START_YMD
+             , FAX_NO
+             , POST_NO
+             , ADDR
+             , TRADE_URL
+             , BUSINESS_TYPE
+             , BUSINESS_CLS
+             , CORPORATE_NO
+             , USE_YN
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               NEXT VALUE FOR CO0601M_SQ_01
+             , #{tradeNm}
+             , #{companyCd}
+             , #{tradeSnm}
+             , #{tradeEnm}
+             , #{tradeDiv}
+             , #{presidentNm}
+             , #{telNo}
+             , #{email}
+             , #{manageNm}
+             , #{manageTelNo}
+             , #{manageEmail}
+             , #{businessNo}
+             , #{tradeStartYmd}
+             , #{faxNo}
+             , #{postNo}
+             , #{addr}
+             , #{tradeUrl}
+             , #{businessType}
+             , #{businessCls}
+             , #{corporateNo}
+             , #{useYn}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <update id="updateCO0401" parameterType="map" >
+        <![CDATA[ /* co0401.updateCO0401 */ ]]>
+        UPDATE CO0601M
+           SET
+               TRADE_NM         = #{tradeNm}
+             , TRADE_SNM        = #{tradeSnm}
+             , TRADE_ENM        = #{tradeEnm}
+             , TRADE_DIV        = #{tradeDiv}
+             , PRESIDENT_NM     = #{presidentNm}
+             , TEL_NO           = #{telNo}
+             , EMAIL            = #{email}
+             , MANAGE_NM        = #{manageNm}
+             , MANAGE_TEL_NO    = #{manageTelNo}
+             , MANAGE_EMAIL     = #{manageEmail}
+             , BUSINESS_NO      = #{businessNo}
+             , TRADE_START_YMD  = #{tradeStartYmd}
+             , FAX_NO           = #{faxNo}
+             , POST_NO          = #{postNo}
+             , ADDR             = #{addr}
+             , TRADE_URL        = #{tradeUrl}
+             , BUSINESS_TYPE    = #{businessType}
+             , BUSINESS_CLS     = #{businessCls}
+             , CORPORATE_NO     = #{corporateNo}
+             , USE_YN           = #{useYn}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE TRADE_CD = #{tradeCd}
+           AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <delete id="deleteCO0401" parameterType="map" >
+        <![CDATA[ /* co0401.deleteCO0401 */ ]]>
+        DELETE
+          FROM CO0601M
+         WHERE TRADE_CD    = #{tradeCd}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+
+    <select id="retrieveTradeListPopup" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0401.retrieveTradeListPopup */ ]]>
+        SELECT
+               TRADE_CD
+             , TRADE_NM
+             , COMPANY_CD
+             , TRADE_SNM
+             , TRADE_ENM
+             , TRADE_DIV
+             , dbo.FN_NAME(TRADE_DIV,'TRADE_DIV') TRADE_DIV_NM
+             , PRESIDENT_NM
+             , TEL_NO
+             , EMAIL
+             , MANAGE_NM
+             , MANAGE_TEL_NO
+             , MANAGE_EMAIL
+             , BUSINESS_NO
+             , TRADE_START_YMD
+             , FAX_NO
+             , POST_NO
+             , ADDR
+             , TRADE_URL
+             , BUSINESS_TYPE
+             , BUSINESS_CLS
+             , CORPORATE_NO
+             , USE_YN
+          FROM CO0601M
+         WHERE 1= 1
+           AND COMPANY_CD = #{companyCd}
+        <if test="tradeNmS != null &amp;&amp; tradeNmS != ''">
+           AND (UPPER(TRADE_CD) LIKE '%'  +  UPPER(#{tradeNmS})  +  '%' OR UPPER(TRADE_NM) LIKE '%'  +  UPPER(#{tradeNmS})  +  '%' )
+        </if>
+        <if test="tradeDivS != null &amp;&amp; tradeDivS != ''">
+          AND TRADE_DIV = #{tradeDivS}
+        </if>
+         ORDER BY TRADE_DIV DESC, TRADE_CD
+    </select>
+</mapper>

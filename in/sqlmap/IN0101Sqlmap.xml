@@ -1,0 +1,994 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : 점검데이터작성
+* Description : 점검데이터작성
+* Author : jit13
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveIN0101     : 점검데이터 목록 조회
+* retrieveIN0101Sub  : 점검데이터 점검항목 조회
+* retrieveIN0101Sub2 : 점검일정 목록 조회
+* updateIN0101List   : 점검목록 수정
+* deleteIN0101List   : 점검목록 삭제
+* saveIN0101ListSub  : 점검항목 저장
+* updateIN0101ListSub: 점검항목 수정
+* deleteIN0101ListSub: 점검항목 삭제
+*************************************************************************************-->
+<mapper namespace="in0101">
+    <!-- 점검데이터작성 조회 -->
+    <select id="retrieveIN0101" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0101.retrieveIN0101 */ ]]>
+        SELECT
+               X.CHK_NO
+             , X.CHK_NM
+             , X.COMPANY_CD
+             , Y.EQ_NO
+             , Y.EQ_NM
+             , X.CHK_TP
+             , X.CYCLE_CD
+             , X.CYCLE_TP
+             , (X.CYCLE_CD + ' ' + dbo.FN_NAME(X.CYCLE_TP, 'PERIOD_TYPE')) CYCLE_DESC
+             , X.ORG_CD
+             , dbo.FN_NAME(X.ORG_CD, 'DEPT') ORG_CD_DESC
+             , X.CAL_CD
+             , X.ACT_YN
+             , X.DAY_YN
+             , X.LAST_CHK_YMD
+             , X.DAY_WEEK
+             , X.CHK_DIV
+             , X.PM_TP
+             , X.USE_AMT
+             , X.UNIT_CD
+             , (SELECT UNIT_NM FROM CO0401M C WHERE C.UNIT_CD = X.UNIT_CD AND C.COMPANY_CD = #{companyCd} ) AS UNIT_NM
+             , (SELECT COMM_CD_NM FROM SC_COMM_CD WHERE COMM_CD = X.CHK_DIV) CHK_DIV_DESC
+             , X.CHK_GRP_NO
+             , '' AS CHK_GRP_NM
+             , X.CHK_GRP_YN
+             , X.FST_REG_USER_ID
+             , X.CHK_REV_NO
+             , CASE X.CYCLE_TP WHEN 'D' THEN ''
+                    ELSE Y.EQ_GRD
+               END EQ_GRD
+             , Z.CHK_REV_STS
+             , X.CHK_STD_MD
+          FROM IN0201M X
+		 INNER JOIN EQ0101M Y ON (X.EQ_NO = Y.EQ_NO AND X.COMPANY_CD = Y.COMPANY_CD)
+		 INNER JOIN IN0201M_R Z ON (X.CHK_REV_NO = Z.CHK_REV_NO AND X.CHK_NO = Z.CHK_NO AND X.COMPANY_CD = Z.COMPANY_CD)
+         WHERE 1=1
+           AND X.COMPANY_CD = #{companyCd}
+        <if test="feqNo != null &amp;&amp; feqNo != ''">
+           AND X.EQ_NO = #{feqNo}
+        </if>
+        <if test="fchkNo != null &amp;&amp; fchkNo != ''">
+           AND X.CHK_NO LIKE #{fchkNo} + '%'
+        </if>
+        <if test="fchkNm != null &amp;&amp; fchkNm != ''">
+           AND UPPER(X.CHK_NM) LIKE '%' + UPPER(#{fchkNm}) + '%'
+        </if>
+        <if test="forgCd != null &amp;&amp; forgCd != ''">
+           AND X.ORG_CD = #{forgCd}
+        </if>
+        <if test="eqGrdS != null &amp;&amp; eqGrdS != ''">
+           AND Y.EQ_GRD IN (${eqGrdS})
+        </if>
+        <if test="dayYnS != null &amp;&amp; dayYnS != ''">
+           AND X.DAY_YN = #{dayYnS}
+        </if>
+         ORDER BY X.CHK_NO DESC
+    </select>
+
+    <select id="retrieveIN0101Cnt" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0101.retrieveIN0101Cnt */ ]]>
+        SELECT EQ_GRD
+             , CASE EQ_GRD WHEN 'A' THEN COUNT(EQ_GRD)
+                   WHEN 'B' THEN COUNT(EQ_GRD)
+                   WHEN 'C' THEN COUNT(EQ_GRD)
+                   WHEN 'D' THEN COUNT(EQ_GRD)
+                   WHEN 'E' THEN COUNT(EQ_GRD)
+               END GRD_CNT
+          FROM EQ0101M
+         WHERE ISNULL(EQ_GRD, '') != ''
+           AND EQ_LOC IN (SELECT CLS_CD FROM EQ0201M WHERE CLS_TYPE = 'E' AND EQ_CLS = 'EQ_LOC' AND EQ_CLS_DIV = 'L' AND COMPANY_CD = #{companyCd})
+           AND COMPANY_CD = #{companyCd}
+           AND EQ_LVL <![CDATA[ <> ]]> '999'
+         GROUP BY EQ_GRD
+         ORDER BY EQ_GRD
+    </select>
+    <!-- 트리에서 점검데이터작성 조회 -->
+    <select id="retrieveIN0101ToTree" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0101.retrieveIN0101ToTree */ ]]>
+        WITH EQ_SUB
+          AS (SELECT CLS_CD,
+                     PRNT_CLS_CD,
+                     CLS_LVL,
+                     COMPANY_CD
+              FROM   EQ0201M
+              WHERE  EQ_CLS = #{eqClsDiv}
+                     AND CLS_CD IN (${eqNo})
+                     AND COMPANY_CD = #{companyCd}
+              UNION ALL
+              SELECT M.CLS_CD,
+                     M.PRNT_CLS_CD,
+                     M.CLS_LVL,
+                     M.COMPANY_CD
+              FROM   EQ0201M M
+                     JOIN EQ_SUB N
+                       ON N.CLS_CD = M.PRNT_CLS_CD AND N.COMPANY_CD = M.COMPANY_CD
+              WHERE  1 = 1)
+        SELECT
+               X.CHK_NO
+             , X.CHK_NM
+             , X.COMPANY_CD
+             , Y.EQ_NO
+             , Y.EQ_NM
+             , X.CHK_TP
+             , X.CYCLE_CD
+             , X.CYCLE_TP
+             , (X.CYCLE_CD + ' ' + dbo.FN_NAME(X.CYCLE_TP, 'PERIOD_TYPE')) CYCLE_DESC
+             , X.ORG_CD
+             , dbo.FN_NAME(X.ORG_CD, 'DEPT') ORG_CD_DESC
+             , X.CAL_CD
+             , X.ACT_YN
+             , X.DAY_YN
+             , X.LAST_CHK_YMD
+             , X.DAY_WEEK
+             , X.CHK_DIV
+             , X.PM_TP
+             , X.USE_AMT
+             , X.UNIT_CD
+             , (SELECT UNIT_NM FROM CO0401M C WHERE C.UNIT_CD = X.UNIT_CD AND C.COMPANY_CD = #{companyCd} ) AS UNIT_NM
+             , (SELECT COMM_CD_NM FROM SC_COMM_CD WHERE COMM_CD = X.CHK_DIV) CHK_DIV_DESC
+             , X.CHK_GRP_NO
+             , '' AS CHK_GRP_NM
+             , X.CHK_GRP_YN
+             , X.FST_REG_USER_ID
+             , X.CHK_REV_NO
+             , Y.EQ_GRD
+             , Z.CHK_REV_STS
+             , X.CHK_STD_MD
+          FROM IN0201M X
+		 INNER JOIN EQ0101M Y ON (X.EQ_NO = Y.EQ_NO AND X.COMPANY_CD = Y.COMPANY_CD)
+		 INNER JOIN IN0201M_R Z ON (X.CHK_REV_NO = Z.CHK_REV_NO AND X.CHK_NO = Z.CHK_NO AND X.COMPANY_CD = Z.COMPANY_CD)
+         WHERE 1=1
+           AND X.COMPANY_CD = #{companyCd}
+         <if test="eqClsDiv == 'EQ_TP'">
+          AND Y.EQ_TP IN (
+              SELECT CLS_CD FROM EQ_SUB
+              )
+         </if>
+         <if test="eqClsDiv == 'EQ_LOC'">
+          AND Y.EQ_LOC IN (
+                SELECT CLS_CD FROM EQ_SUB
+              )
+         </if>
+         <if test="eqClsDiv == 'EQ_PRCS'">
+          AND Y.EQ_PRCS IN (
+                SELECT CLS_CD FROM EQ_SUB
+              )
+         </if>
+         <if test="eqClsDiv == 'EQ_MY'">
+          AND Y.EQ_PRCS IN (
+                 SELECT EQ_PRCS
+                  FROM EQ0101M
+                 WHERE 1=1
+                   AND EQ_NO IN (${eqNo})
+                   AND COMPANY_CD = #{companyCd}
+              )
+          AND Y.EQ_NO IN (SELECT EQ_NO FROM EQ0101P WHERE USE_YN = 'Y' AND USER_ID = #{userId} AND COMPANY_CD = #{companyCd})
+         </if>
+
+         ORDER BY X.CHK_NO DESC
+    </select>
+
+    <!-- 점검항목데이터작성 조회 -->
+    <select id="retrieveIN0101Sub" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0101.retrieveIN0101Sub */ ]]>
+        SELECT
+               X.SEQ_NO
+             , X.CHK_DTL_NM
+             , X.CHK_PART_DESC
+             , X.INPUT_TP
+             , CASE WHEN INPUT_TP = 'STS' THEN ''
+			   ELSE CONVERT(VARCHAR, X.CHK_STD_VAL) END CHK_STD_VAL
+             , CASE WHEN INPUT_TP = 'STS' THEN ''
+			   ELSE CONVERT(VARCHAR, X.CHK_MIN_VAL) END CHK_MIN_VAL
+             , CASE WHEN INPUT_TP = 'STS' THEN ''
+			   ELSE CONVERT(VARCHAR, X.CHK_MAX_VAL) END CHK_MAX_VAL
+             , CASE WHEN INPUT_TP = 'STS' THEN ''
+			   ELSE CONVERT(VARCHAR, X.WARN_MIN_VAL) END WARN_MIN_VAL
+             , CASE WHEN INPUT_TP = 'STS' THEN ''
+			   ELSE CONVERT(VARCHAR, X.WARN_MAX_VAL) END WARN_MAX_VAL
+             , X.UNIT_CD
+             , (SELECT UNIT_NM FROM CO0401M WHERE UNIT_CD = X.UNIT_CD) UNIT_NM
+             , X.CMMNT
+             , X.CHK_DTL_NO
+             , X.CHK_NO
+             , X.CHK_METHOD
+             , X.AUTO_CHK
+             , X.CHK_CON
+             , X.WORK_TP
+             , X.COMPANY_CD
+          FROM IN0201D X
+         WHERE X.CHK_NO = #{chkNo}
+           AND X.COMPANY_CD = #{companyCd}
+         ORDER BY CAST(X.SEQ_NO AS INT) ASC
+    </select>
+
+    <!-- 점검일정데이터 조회 -->
+    <select id="retrieveIN0101Sub2" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0101.retrieveIN0101Sub2 */ ]]>
+        SELECT
+               X.ACTL_YMD
+             , X.COMPANY_CD
+             , X.CMPLT_YN
+             , X.CMPL_YMD
+             , STRING_AGG(dbo.FN_NAME(Y.CHK_USER_ID, 'USER'), ', ') AS CHK_USER_NM
+             , CASE WHEN CHARINDEX('X', STRING_AGG(Y.CHK_STS, ','), 0) > 0 THEN 'Y'
+                    WHEN STRING_AGG(Y.CHK_STS, ',') IS NULL THEN ''
+                    ELSE 'N'
+                END AS CHK_STS_DESC
+          FROM IN0401M X
+          LEFT OUTER JOIN IN0401D Y ON (Y.CHK_SCHD_NO = X.CHK_SCHD_NO AND Y.COMPANY_CD = X.COMPANY_CD)
+         WHERE X.CHK_NO = #{chkNo}
+           AND X.COMPANY_CD = #{companyCd}
+         GROUP BY X.ACTL_YMD, X.CMPLT_YN, X.CMPL_YMD, X.COMPANY_CD
+         ORDER BY X.ACTL_YMD ASC
+    </select>
+
+    <!-- 예방점검마스터 정보 저장(TBM)  -->
+    <insert id="saveIN0101ListTbm" parameterType="map" >
+        <![CDATA[ /* in0101.saveIN0101ListTbm */ ]]>
+        INSERT INTO IN0201M (
+               CHK_NO
+             , COMPANY_CD
+             , CHK_REV_NO
+             , CHK_TP
+             , CHK_NM
+             , CAL_CD
+             , EQ_NO
+             , LAST_CHK_YMD
+             , ORG_CD
+             , CYCLE_CD
+             , CYCLE_TP
+             , ACT_YN
+             , DAY_YN
+             , CHK_DIV
+             , PM_TP
+             , DAY_WEEK
+             , CHK_STD_MD
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{chkNo}
+             , #{companyCd}
+             , #{chkRevNo}
+             , #{chkTp}
+             , #{chkNm}
+             , #{calCd}
+             , #{eqNo}
+             , #{lastChkYmd}
+             , #{orgCd}
+             , #{cycleCd}
+             , #{cycleTp}
+             , ISNULL(#{actYn},'N')
+             , ISNULL(#{dayYn}, 'N')
+             , #{chkDiv}
+             , #{pmTp}
+             , #{dayWeek}
+             , #{chkStdMd}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <!-- 예방점검마스터 리비전 저장(TBM)  -->
+    <insert id="saveIN0101RListTbm" parameterType="map" >
+        <![CDATA[ /* in0101.saveIN0101RListTbm */ ]]>
+        INSERT INTO IN0201M_R (
+               CHK_REV_NO
+             , COMPANY_CD
+             , CHK_REV_SEQ
+             , CHK_REV_YMD
+             , CHK_REV_STS
+             , CHK_NO
+             , CHK_TP
+             , CHK_NM
+             , CAL_CD
+             , EQ_NO
+             , LAST_CHK_YMD
+             , ORG_CD
+             , ACT_YN
+             , DAY_YN
+             , CHK_DIV
+             , PM_TP
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{chkRevNo}
+             , #{companyCd}
+             , #{chkRevSeq}
+             <if test="chkRevSts == '30'">
+             , GETDATE()
+             </if>
+             <if test="chkRevSts != '30'">
+             , #{chkRevYmd}
+             </if>
+             , #{chkRevSts}
+             , #{chkNo}
+             , #{chkTp}
+             , #{chkNm}
+             , #{calCd}
+             , #{eqNo}
+             , #{lastChkYmd}
+             , #{orgCd}
+             , ISNULL(#{actYn},'N')
+             , ISNULL(#{dayYn}, 'N')
+             , #{chkDiv}
+             , #{pmTp}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <!-- 예방점검마스터 정보 저장(UBM)  -->
+    <insert id="saveIN0101ListUbm" parameterType="map" >
+        <![CDATA[ /* in0101.saveIN0101ListUbm */ ]]>
+        INSERT INTO IN0201M (
+               CHK_NO
+             , COMPANY_CD
+             , CHK_REV_NO
+             , CHK_TP
+             , CHK_NM
+             , CAL_CD
+             , EQ_NO
+             , LAST_CHK_YMD
+             , ORG_CD
+             , ACT_YN
+             , CHK_DIV
+             , PM_TP
+             , USE_AMT
+             , UNIT_CD
+             , CHK_STD_MD
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{chkNo}
+             , #{companyCd}
+             , #{chkRevNo}
+             , #{chkTp}
+             , #{chkNm}
+             , #{calCd}
+             , #{eqNo}
+             , #{lastChkYmd}
+             , #{orgCd}
+             , ISNULL(#{actYn},'N')
+             , #{chkDiv}
+             , #{pmTp}
+             , #{useAmt}
+             , #{unitCd}
+             , #{chkStdMd}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <!-- 예방점검마스터 리비전 저장(UBM)  -->
+    <insert id="saveIN0101RListUbm" parameterType="map" >
+        <![CDATA[ /* in0101.saveIN0101RListUbm */ ]]>
+        INSERT INTO IN0201M_R (
+               CHK_REV_NO
+             , COMPANY_CD
+             , CHK_REV_SEQ
+             , CHK_REV_YMD
+             , CHK_REV_STS
+             , CHK_NO
+             , CHK_TP
+             , CHK_NM
+             , CAL_CD
+             , EQ_NO
+             , LAST_CHK_YMD
+             , ORG_CD
+             , ACT_YN
+             , CHK_DIV
+             , PM_TP
+             , USE_AMT
+             , UNIT_CD
+             , CHK_STD_MD
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{chkRevNo}
+             , #{companyCd}
+             , #{chkRevSeq}
+             <if test="chkRevSts == '30'">
+             , GETDATE()
+             </if>
+             <if test="chkRevSts != '30'">
+             , #{chkRevYmd}
+             </if>
+             , #{chkRevSts}
+             , #{chkNo}
+             , #{chkTp}
+             , #{chkNm}
+             , #{calCd}
+             , #{eqNo}
+             , #{lastChkYmd}
+             , #{orgCd}
+             , ISNULL(#{actYn},'N')
+             , #{chkDiv}
+             , #{pmTp}
+             , #{useAmt}
+             , #{unitCd}
+             , #{chkStdMd}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <!-- 점검목록 정보 수정(TBM)  -->
+    <update id="updateIN0101ListTbm" parameterType="map" >
+        <![CDATA[ /* in0101.updateIN0101ListTbm */ ]]>
+        UPDATE IN0201M
+          SET
+              CHK_TP           = #{chkTp}
+            , CHK_NM           = #{chkNm}
+            , CAL_CD           = #{calCd}
+            , EQ_NO            = #{eqNo}
+            , LAST_CHK_YMD     = #{lastChkYmd}
+            , ORG_CD           = #{orgCd}
+            , CYCLE_CD         = #{cycleCd}
+            , CYCLE_TP         = #{cycleTp}
+            , ACT_YN           = ISNULL(#{actYn}, 'N')
+            , DAY_YN           = ISNULL(#{dayYn}, 'N')
+            , CHK_DIV          = #{chkDiv}
+            , DAY_WEEK         = #{dayWeek}
+            , PM_TP            = #{pmTp}
+            , USE_AMT          = ''
+            , UNIT_CD          = ''
+            , CHK_STD_MD           = #{chkStdMd}
+            , FNL_EDIT_DT    = GETDATE()
+            , FNL_EDIT_USER_ID = #{fnlEditUserId}
+        WHERE CHK_NO = #{chkNo}
+          AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <!-- 점검목록 정보 수정(UBM)  -->
+    <update id="updateIN0101ListUbm" parameterType="map" >
+        <![CDATA[ /* in0101.updateIN0101ListUbm */ ]]>
+        UPDATE IN0201M
+          SET
+              CHK_TP           = #{chkTp}
+            , CHK_NM           = #{chkNm}
+            , CAL_CD           = #{calCd}
+            , EQ_NO            = #{eqNo}
+            , LAST_CHK_YMD     = #{lastChkYmd}
+            , ORG_CD           = #{orgCd}
+            , ACT_YN           = ISNULL(#{actYn}, 'N')
+            , DAY_YN           = ''
+            , CHK_DIV          = #{chkDiv}
+            , PM_TP            = #{pmTp}
+            , CYCLE_CD         = ''
+            , CYCLE_TP         = ''
+            , USE_AMT          = #{useAmt}
+            , UNIT_CD          = #{unitCd}
+            , DAY_WEEK         = ''
+            , CHK_STD_MD         = #{chkStdMd}
+            , FNL_EDIT_DT    = GETDATE()
+            , FNL_EDIT_USER_ID = #{fnlEditUserId}
+        WHERE CHK_NO = #{chkNo}
+          AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <!-- 점검항목 정보  삭제 -->
+    <delete id="deleteIN0101List" parameterType="map" >
+        <![CDATA[ /* in0101.deleteIN0101List */ ]]>
+           DELETE
+             FROM IN0201M
+            WHERE CHK_NO =  #{chkNo}
+              AND COMPANY_CD = #{companyCd}
+    </delete>
+
+ 	<!-- 점검항목 정보 저장  -->
+    <insert id="saveIN0201DList" parameterType="map" >
+        <![CDATA[ /* in0101.saveIN0201DList */ ]]>
+        INSERT INTO IN0201D (
+               CHK_DTL_NO
+             , COMPANY_CD
+             , CHK_NO
+             , SEQ_NO
+             , CHK_DTL_NM
+             , CHK_PART_DESC
+             , INPUT_TP
+             , CHK_MIN_VAL
+             , CHK_MAX_VAL
+             , CHK_STD_VAL
+             , WARN_MIN_VAL
+             , WARN_MAX_VAL
+             , UNIT_CD
+             , CMMNT
+             , CHK_METHOD
+             , AUTO_CHK
+             , CHK_CON
+             , WORK_TP
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{chkDtlNo}
+             , #{companyCd}
+             , #{chkNo}
+             , #{seqNo}
+             , #{chkDtlNm}
+             , #{chkPartDesc}
+             , #{inputTp}
+             , #{chkMinVal}
+             , #{chkMaxVal}
+             , #{chkStdVal}
+             , #{warnMinVal}
+             , #{warnMaxVal}
+             , #{unitCd}
+             , #{cmmnt}
+             , #{chkMethod}
+             , #{autoChk}
+             , #{chkCon}
+             , #{workTp}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <!-- 점검항목 정보 저장  -->
+    <insert id="saveIN0201DRList" parameterType="map" >
+        <![CDATA[ /* in0101.saveIN0201DRList */ ]]>
+        INSERT INTO IN0201D_R (
+               CHK_REV_SEQ
+             , COMPANY_CD
+             , CHK_DTL_NO
+             , CHK_NO
+             , SEQ_NO
+             , CHK_DTL_NM
+             , CHK_PART_DESC
+             , INPUT_TP
+             , CHK_MIN_VAL
+             , CHK_MAX_VAL
+             , CHK_STD_VAL
+             , WARN_MIN_VAL
+             , WARN_MAX_VAL
+             , UNIT_CD
+             , CMMNT
+             , CHK_METHOD
+             , AUTO_CHK
+             , CHK_CON
+             , WORK_TP
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{chkRevSeq}
+             , #{companyCd}
+             , #{chkDtlNo}
+             , #{chkNo}
+             , #{seqNo}
+             , #{chkDtlNm}
+             , #{chkPartDesc}
+             , #{inputTp}
+             , #{chkMinVal}
+             , #{chkMaxVal}
+             , #{chkStdVal}
+             , #{warnMinVal}
+             , #{warnMaxVal}
+             , #{unitCd}
+             , #{cmmnt}
+             , #{chkMethod}
+             , #{autoChk}
+             , #{chkCon}
+             , #{workTp}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+ <!-- 점검항목 정보 수정  -->
+    <update id="updateIN0101ListSub" parameterType="map" >
+        <![CDATA[ /* in0101.updateIN0101ListSub */ ]]>
+        UPDATE IN0201D
+          SET
+              SEQ_NO           = #{seqNo}
+            , CHK_DTL_NM       = #{chkDtlNm}
+            , CHK_PART_DESC    = #{chkPartDesc}
+            , INPUT_TP         = #{inputTp}
+            , CHK_MIN_VAL      = #{chkMinVal}
+            , CHK_MAX_VAL      = #{chkMaxVal}
+            , WARN_MIN_VAL     = #{warnMinVal}
+            , WARN_MAX_VAL     = #{warnMaxVal}
+            , CHK_STD_VAL      = #{chkStdVal}
+            , UNIT_CD          = #{unitCd}
+            , CMMNT            = #{cmmnt}
+            , CHK_METHOD       = #{chkMethod}
+            , AUTO_CHK         = #{autoChk}
+            , CHK_CON         = #{chkCon}
+            , WORK_TP         = #{workTp}
+            , FNL_EDIT_DT      = GETDATE()
+            , FNL_EDIT_USER_ID = #{fnlEditUserId}
+        WHERE CHK_DTL_NO = #{chkDtlNo}
+          AND CHK_NO = #{chkNo}
+          AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <!-- 점검항목 정보  삭제 -->
+    <delete id="deleteIN0101ListSub" parameterType="map" >
+        <![CDATA[ /* in0101.deleteIN0101ListSub */ ]]>
+           DELETE
+             FROM IN0201D
+            WHERE CHK_DTL_NO = #{chkDtlNo}
+              AND CHK_NO     = #{chkNo}
+              AND COMPANY_CD = #{companyCd}
+    </delete>
+
+	<!-- 예방점검 리비전 목록 조회 -->
+    <select id="retrieveIN0101RList" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0101.retrieveIN0101RList */ ]]>
+        SELECT
+               X.CHK_REV_NO
+             , X.COMPANY_CD
+             , X.CHK_REV_SEQ
+             , CONVERT(VARCHAR,X.CHK_REV_YMD,120) AS CHK_REV_YMD
+             , X.CHK_REV_STS
+             , DBO.FN_NAME(X.CHK_REV_STS,'REV_STS') AS CHK_REV_STS_NM
+             , X.CHK_NO
+             , X.CHK_NM
+             , Y.EQ_NO
+             , Y.EQ_NM
+             , X.CHK_TP
+             , X.CYCLE_CD
+             , X.CYCLE_TP
+             , (X.CYCLE_CD + ' ' + dbo.FN_NAME(X.CYCLE_TP, 'PERIOD_TYPE')) CYCLE_DESC
+             , X.ORG_CD
+             , dbo.FN_NAME(X.ORG_CD, 'DEPT') ORG_CD_DESC
+             , X.CAL_CD
+             , X.ACT_YN
+             , X.DAY_YN
+             , X.LAST_CHK_YMD
+             , X.DAY_WEEK
+             , X.CHK_DIV
+             , X.PM_TP
+             , X.USE_AMT
+             , X.UNIT_CD
+             , (SELECT UNIT_NM FROM CO0401M C WHERE C.UNIT_CD = X.UNIT_CD AND C.COMPANY_CD = #{companyCd} ) AS UNIT_NM
+             , (SELECT COMM_CD_NM FROM SC_COMM_CD WHERE COMM_CD = X.CHK_DIV) CHK_DIV_DESC
+             , X.CHK_GRP_NO
+             , '' AS CHK_GRP_NM
+             , X.CHK_GRP_YN
+             , X.CHK_STD_MD
+             , X.FST_REG_USER_ID
+             , CONVERT(VARCHAR,X.FST_REG_DT,120) AS FST_REG_DT
+             , X.CMMNT
+          FROM IN0201M_R X
+         INNER JOIN EQ0101M Y ON (Y.EQ_NO = X.EQ_NO AND Y.COMPANY_CD = X.COMPANY_CD)
+         WHERE X.CHK_NO = #{chkNo}
+           AND X.COMPANY_CD = #{companyCd}
+    </select>
+
+    <!-- 점검항목 리비전 목록 조회 -->
+    <select id="retrieveIN0201DRList" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0101.retrieveIN0201DRList */ ]]>
+        SELECT
+               X.CHK_REV_SEQ
+             , X.COMPANY_CD
+             , X.SEQ_NO
+             , X.CHK_DTL_NO
+             , X.CHK_DTL_NM
+             , X.CHK_PART_DESC
+             , X.INPUT_TP
+             , CASE WHEN INPUT_TP = 'STS' THEN ''
+			   ELSE CONVERT(VARCHAR, X.CHK_STD_VAL) END CHK_STD_VAL
+             , CASE WHEN INPUT_TP = 'STS' THEN ''
+			   ELSE CONVERT(VARCHAR, X.CHK_MIN_VAL) END CHK_MIN_VAL
+             , CASE WHEN INPUT_TP = 'STS' THEN ''
+			   ELSE CONVERT(VARCHAR, X.CHK_MAX_VAL) END CHK_MAX_VAL
+             , CASE WHEN INPUT_TP = 'STS' THEN ''
+			   ELSE CONVERT(VARCHAR, X.WARN_MIN_VAL) END WARN_MIN_VAL
+             , CASE WHEN INPUT_TP = 'STS' THEN ''
+			   ELSE CONVERT(VARCHAR, X.WARN_MAX_VAL) END WARN_MAX_VAL
+             , X.UNIT_CD
+             , (SELECT UNIT_NM FROM CO0401M B WHERE B.UNIT_CD = X.UNIT_CD AND B.COMPANY_CD = #{companyCd}) UNIT_NM
+             , X.CMMNT
+             , X.CHK_DTL_NO
+             , X.CHK_NO
+             , X.CHK_METHOD
+             , X.AUTO_CHK
+             , X.CHK_CON
+             , X.WORK_TP
+          FROM IN0201D_R X
+         WHERE X.CHK_REV_SEQ = #{chkRevSeq}
+           AND X.COMPANY_CD  = #{companyCd}
+    </select>
+
+    <select id="retrieveChkRevSeqNextValue" parameterType="map" resultType="String" >
+    	<![CDATA[ /* in0101.retrieveChkRevSeqNextValue */ ]]>
+    	SELECT NEXT VALUE FOR DBO.CHK_REV_SEQ_01 AS CHK_REV_SEQ
+    </select>
+
+    <select id="retrieveChkRevNoNextValue" parameterType="map" resultType="String" >
+    	<![CDATA[ /* in0101.retrieveChkRevNoNextValue */ ]]>
+    	SELECT NEXT VALUE FOR DBO.CHK_REV_NO_01 AS CHK_REV_NO
+    </select>
+
+    <select id="retrieveChkDtlNoSeqNextValue" parameterType="map" resultType="String" >
+    	<![CDATA[ /* in0101.retrieveChkDtlNoSeqNextValue */ ]]>
+    	SELECT NEXT VALUE FOR DBO.SQIN_CHECK_ITEM_01 AS CHK_DTL_NO
+    </select>
+
+
+    <insert id="saveIN0201MRList" parameterType="map" >
+        <![CDATA[ /* in0101.saveIN0201MRList */ ]]>
+        MERGE INTO IN0201M_R A
+        USING (SELECT TOP 1 #{companyCd} COMPANY_CD, #{chkRevSeq} AS CHK_REV_SEQ, #{chkNo} AS CHK_NO,
+		CHK_NM, CHK_TP, CHK_DIV, EQ_NO, ORG_CD, ACT_YN, CAL_CD, DAY_YN, LAST_CHK_YMD,PM_TP, USE_AMT,
+		UNIT_CD, CHK_GRP_NO, CHK_GRP_YN, CMMNT FROM IN0201M_R WHERE CHK_NO = #{chkNo} AND COMPANY_CD = #{companyCd} ORDER BY CHK_REV_NO DESC ) B
+           ON (A.CHK_REV_SEQ = B.CHK_REV_SEQ AND A.CHK_NO = B.CHK_NO AND A.COMPANY_CD = B.COMPANY_CD)
+         WHEN NOT MATCHED THEN
+        INSERT (CHK_REV_SEQ, COMPANY_CD, CHK_REV_STS, CHK_NO, CHK_NM, CHK_TP, CHK_DIV, EQ_NO, ORG_CD, ACT_YN, CAL_CD, DAY_YN, LAST_CHK_YMD,PM_TP, USE_AMT,
+		UNIT_CD, CHK_GRP_NO, CHK_GRP_YN, CMMNT, FST_REG_DT, FST_REG_USER_ID, FNL_EDIT_DT, FNL_EDIT_USER_ID)
+        VALUES(
+               #{chkRevSeq}
+             , #{companyCd}
+             , '10'
+             , B.CHK_NO
+             , B.CHK_NM
+             , B.CHK_TP
+             , B.CHK_DIV
+             , B.EQ_NO
+             , B.ORG_CD
+             , B.ACT_YN
+             , B.CAL_CD
+             , B.DAY_YN
+             , B.LAST_CHK_YMD
+             , B.PM_TP
+             , B.USE_AMT
+             , B.UNIT_CD
+             , B.CHK_GRP_NO
+             , B.CHK_GRP_YN
+             , B.CMMNT
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+          );
+    </insert>
+    <!-- 점검부서 리스트 조회(점검마스터 항목 중 점검부서로 지정된 부서리스트 조회) -->
+    <select id="retrieveChkOrgList" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0101.retrieveChkOrgList */ ]]>
+        SELECT DISTINCT
+               X.ORG_CD AS CODE
+             , Y.ORG_NM AS VALUE
+          FROM IN0201M X
+          LEFT OUTER JOIN SC_ORG Y ON (X.ORG_CD = Y.ORG_CD AND X.COMPANY_CD = Y.COMPANY_CD)
+         WHERE X.COMPANY_CD = #{companyCd}
+    </select>
+
+    <update id="updateIN0101RListCmmnt" parameterType="map" >
+        <![CDATA[ /* in0101.updateIN0101RListCmmnt */ ]]>
+        UPDATE IN0201M_R
+          SET
+              CMMNT            = #{cmmnt}
+            , FNL_EDIT_DT      = GETDATE()
+            , FNL_EDIT_USER_ID = #{fnlEditUserId}
+        WHERE CHK_REV_NO = #{chkRevNo}
+          AND CHK_REV_SEQ = #{chkRevSeq}
+          AND CHK_NO = #{chkNo}
+          AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <!-- 점검부서 리스트 조회(점검마스터 항목 중 점검부서로 지정된 부서리스트 조회) -->
+    <select id="retrieveIN0201PList" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0101.retrieveIN0201PList */ ]]>
+        SELECT X.USER_SEQ
+             , X.CHK_NO
+             , X.USER_ID
+             , Y.USER_NM
+             , X.COMPANY_CD
+          FROM IN0201P X
+         INNER JOIN SC_USER Y ON (X.USER_ID = Y.USER_ID AND X.COMPANY_CD = Y.COMPANY_CD)
+         WHERE X.CHK_NO = #{chkNo}
+           AND X.COMPANY_CD = #{companyCd}
+    </select>
+
+    <insert id="insertIN0201PList" parameterType="map" >
+        <![CDATA[ /* in0101.insertIN0201PList */ ]]>
+        INSERT INTO IN0201P (
+               USER_SEQ
+             , CHK_NO
+             , USER_ID
+             , COMPANY_CD
+             , FST_REG_USER_ID
+             , FST_REG_DT
+             , FNL_EDIT_USER_ID
+             , FNL_EDIT_DT
+        ) VALUES (
+               #{userSeq}
+             , #{chkNo}
+             , #{userId}
+             , #{companyCd}
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+             , GETDATE()
+        )
+
+    </insert>
+
+    <update id="updateIN0201PList" parameterType="map" >
+        <![CDATA[ /* in0101.updateIN0201PList */ ]]>
+        UPDATE IN0201P
+          SET
+              USER_ID          = #{userId}
+            , FNL_EDIT_DT      = GETDATE()
+            , FNL_EDIT_USER_ID = #{fnlEditUserId}
+        WHERE USER_SEQ = #{userSeq}
+          AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <delete id="deleteIN0201PList" parameterType="map" >
+        <![CDATA[ /* in0101.deleteIN0201PList */ ]]>
+        DELETE
+          FROM IN0201P
+         WHERE USER_SEQ = #{userSeq}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+
+    <select id="selectIN0201MList" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0101.selectIN0201MList */ ]]>
+        SELECT
+              X.CHK_NO
+            , X.COMPANY_CD
+            , X.CYCLE_CD
+            , X.CYCLE_TP
+            , X.DAY_WEEK
+            , X.CHK_STD_MD
+            , X.EQ_NO
+            , ISNULL(X.CAL_CD, '') AS CAL_CD
+         FROM IN0201M X
+        WHERE X.CHK_NO = #{chkNo}
+          AND X.COMPANY_CD = #{companyCd}
+    </select>
+
+    <insert id="insertIN0401WY" parameterType="map" >
+        <![CDATA[ /* in0101.insertIN0401WY */ ]]>
+        INSERT INTO IN0401M (
+               CHK_NO
+             , COMPANY_CD
+             , CHK_SCHD_NO
+             , CHK_REV_SEQ
+             , ACTL_YMD
+             , CHK_YYYY
+             , WEEK_CNT
+             , DAY_WEEK
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        SELECT #{chkNo}
+             , #{companyCd}
+             , NEXT VALUE FOR DBO.SQIN_CHK_SCHD_NO
+             , (SELECT B.CHK_REV_SEQ FROM IN0201M A INNER JOIN IN0201M_R B ON (A.CHK_NO = B.CHK_NO AND A.CHK_REV_NO = B.CHK_REV_NO AND A.COMPANY_CD = B.COMPANY_CD) WHERE A.CHK_NO = #{chkNo} AND A.COMPANY_CD = #{companyCd} )
+             , TARGET_YMD
+             , SUBSTRING(REPLACE(TARGET_YMD,'-',''),0,5)
+             , CONVERT(CHAR, DATEPART(WEEK, CONVERT(CHAR(8),CONVERT(DATE,TARGET_YMD),112)))
+             , CASE DATEPART(WEEKDAY,CONVERT(DATE,TARGET_YMD)) WHEN '1' THEN'SUN' WHEN '2' THEN 'MON' WHEN '3' THEN 'TUE' WHEN '4' THEN 'WED' WHEN '5' THEN 'THU' WHEN '6' THEN 'FRI' ELSE'SAT' END
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+          FROM TI1001T T
+         WHERE TARGET_YMD  <![CDATA[ >= ]]> #{chkStdMd}
+           AND TARGET_YMD  <![CDATA[ <= ]]> #{targetYmd}
+           AND TARGET_YEAR = #{targetYear}
+        <if test="chkMM != null &amp;&amp; chkMM != ''">
+           AND RIGHT('00' + CAST(T.TARGET_MONTH AS NVARCHAR), 2) = #{chkMM}
+        </if>
+        <if test="cycleCd != null &amp;&amp; cycleCd != ''">
+           AND TARGET_WEEK = #{cycleCd}
+        </if>
+        <if test="dayWeek != null &amp;&amp; dayWeek != ''">
+           AND TARGET_DAY_WEEK = #{dayWeek}
+        </if>
+           AND TARGET_YMD NOT IN (
+                           SELECT ACTL_YMD FROM IN0401M
+                            WHERE ACTL_YMD = T.TARGET_YMD
+                              AND CHK_NO = #{chkNo}
+                              AND COMPANY_CD = #{companyCd}
+                              AND ISNULL(CMPLT_YN, 'N') = 'Y'
+                           )
+
+    </insert>
+
+    <delete id="createBeforeDeleteIN0401M" parameterType="map" >
+        <![CDATA[ /* in0101.createBeforeDeleteIN0401M */ ]]>
+        DELETE
+          FROM IN0401M
+        WHERE CHK_NO             = #{chkNo}
+          AND COMPANY_CD         = #{companyCd}
+          AND ACTL_YMD <![CDATA[ >= ]]> #{chkStdMd}
+          AND ACTL_YMD <![CDATA[ <= ]]> #{targetYmd}
+          AND ISNULL(CMPLT_YN, 'N') = 'N'
+    </delete>
+
+    <select id="selectMT0301DList" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0101.selectMT0301DList */ ]]>
+        SELECT X.EXPORT_YMD
+          FROM MT0301D X
+         WHERE X.CAL_CD = #{calCd}
+           AND X.COMPANY_CD = #{companyCd}
+           AND X.WORK_YN = 'Y'
+           AND X.EXPORT_YMD IN (
+               SELECT Y.ACTL_YMD
+                 FROM IN0401M Y
+                 INNER JOIN IN0201M Z ON (Y.CHK_NO = Z.CHK_NO AND Y.COMPANY_CD = Z.COMPANY_CD)
+                WHERE Y.CHK_NO = #{chkNo}
+                 AND Y.COMPANY_CD = #{companyCd}
+                 AND Y.CMPLT_YN != 'Y'
+               )
+
+    </select>
+
+    <update id="updateActlYmd" parameterType="map" >
+        <![CDATA[ /* in0101.updateActlYmd */ ]]>
+        UPDATE IN0401M
+           SET ACTL_YMD = DATEADD(DAY,1, CONVERT(DATE, ACTL_YMD))
+         WHERE CHK_NO = #{chkNo}
+           AND COMPANY_CD = #{companyCd}
+           AND ACTL_YMD = #{exportYmd}
+           AND CMPLT_YN != 'Y'
+
+    </update>
+
+    <update id="updateCycle" parameterType="map" >
+        <![CDATA[ /* in0101.updateCycle */ ]]>
+        UPDATE IN0201M
+           SET CHK_STD_MD = #{chkStdMd}
+             , CYCLE_CD = #{cycleCd}
+             , CYCLE_TP = #{cycleTp}
+             , DAY_WEEK = #{dayWeek}
+         WHERE CHK_NO = #{chkNo}
+           AND COMPANY_CD = #{companyCd}
+
+    </update>
+
+
+
+
+</mapper>

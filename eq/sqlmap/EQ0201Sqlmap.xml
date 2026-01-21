@@ -1,0 +1,508 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : EQ0201
+* Description : 종류
+* Author :
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveEQ0201List : 메뉴 목록 조회
+* insertEQ0201 : 종류 목록 추가
+* updateEQ0201 : 종류 목록 수정
+* deleteEQ0201 : 종류 목록 삭제
+*************************************************************************************-->
+<mapper namespace="eq0201">
+    <select id="retrieveEQ0201EqTree" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0201.retrieveEQ0201EqTree */ ]]>
+        SELECT
+               EQ_NO
+             , EQ_NO + ' [' + EQ_NM + ']' AS EQ_NO_NM
+             , EQ_NM
+             , CASE WHEN EQ_CLS = 'EQ' THEN '/images/ztree/eq.png' ELSE '' END icon
+             , PRNT_EQ_NO
+             , EQ_CLS
+             , EQ_TP
+             , (SELECT CLS_NM FROM EQ0201M WHERE COMPANY_CD = #{companyCd} AND A.EQ_TP = CLS_CD AND EQ_CLS = 'EQ_TP') EQ_TP_NM
+             , EQ_GRD
+             , EQ_LINE
+             , (SELECT CLS_NM FROM EQ0201M WHERE COMPANY_CD = #{companyCd} AND PLANT_CODE = A.PLANT_CODE AND FACTORY_CODE = A.FACTORY_CODE AND CLS_CD = EQ_LINE) AS EQ_LINE_NM
+             , COMPANY_CD
+          FROM EQ0101M_P A
+         WHERE ( EQ_DIV = 'L' OR ISNULL(A.EQ_PRCS, '') != '')
+        <if test="eqNo != null &amp;&amp; eqNo != ''">
+           AND EQ_PRCS IN (SELECT EQ_PRCS FROM EQ0101M_P WHERE EQ_NO = #{eqNo} AND COMPANY_CD = #{companyCd})
+        </if>
+           AND A.COMPANY_CD = #{companyCd}
+         ORDER BY EQ_NO ASC
+    </select>
+
+    <select id="retrieveEQ0201PrcsTree" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0201.retrieveEQ0201PrcsTree */ ]]>
+	    SELECT A.CLS_CD
+             , A.PRNT_CLS_CD
+             , (SELECT Y.CLS_NM FROM EQ0202R Y WHERE Y.COMPANY_CD = #{companyCd} AND A.PRNT_CLS_CD=Y.CLS_CD AND EQ_CLS = #{eqClsDiv} AND CLS_REV_NO = #{clsRevNo}) PRNT_CLS_NM
+             , A.CLS_CD + ' [' + CLS_NM + ']' AS CLS_CD_NM
+             , UPPER(A.CLS_CD + ' [' + CLS_NM + ']') AS CLS_CAP_NM
+             , A.CLS_NM CLS_NM
+             , A.EQ_CLS
+             , A.CLS_LVL
+             , A.CLS_TYPE
+             , A.COMPANY_CD
+          FROM EQ0202R A
+         WHERE 1=1
+           AND A.EQ_CLS = 'EQ_PRCS'
+           AND A.CLS_TYPE = 'E'
+           AND A.CLS_REV_NO = #{clsRevNo}
+           AND A.COMPANY_CD = #{companyCd}
+        <if test="clsNm != null &amp;&amp; clsNm != ''">
+           AND UPPER(A.CLS_NM) LIKE '%' + UPPER(#{clsNm}) + '%'
+        </if>
+         ORDER BY CLS_CD ASC
+    </select>
+
+    <select id="retrieveEQ0201TpTree" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0201.retrieveEQ0201TpTree */ ]]>
+        SELECT
+               A.CLS_CD
+             , A.PRNT_CLS_CD
+             , (SELECT Y.CLS_NM FROM EQ0202R Y WHERE Y.COMPANY_CD = #{companyCd} AND A.PRNT_CLS_CD=Y.CLS_CD AND EQ_CLS = #{eqClsDiv}  AND CLS_REV_NO = #{clsRevNo}) PRNT_CLS_NM
+             , A.CLS_CD + ' [' + CLS_NM + ']' AS CLS_CD_NM
+             , UPPER(A.CLS_CD + ' [' + CLS_NM + ']') AS CLS_CAP_NM
+             , A.CLS_NM CLS_NM
+             , A.EQ_CLS
+             , A.CLS_LVL
+             , A.CLS_TYPE
+             , A.COMPANY_CD
+          FROM EQ0202R A
+         WHERE 1=1
+           AND A.EQ_CLS = 'EQ_TP'
+           AND A.CLS_TYPE = 'E'
+           AND A.CLS_REV_NO = #{clsRevNo}
+           AND A.COMPANY_CD = #{companyCd}
+        <if test="clsNm != null &amp;&amp; clsNm != ''">
+           AND UPPER(A.CLS_NM) LIKE '%' + UPPER(#{clsNm}) + '%'
+        </if>
+         ORDER BY A.CLS_CD ASC
+    </select>
+
+    <select id="retrieveEQ0201LocTree" parameterType="map" resultType="map" >
+       <![CDATA[ /* eq0201.retrieveEQ0201LocTree */ ]]>
+	    SELECT A.CLS_CD
+             , A.PRNT_CLS_CD
+             , (SELECT Y.CLS_NM FROM EQ0202R Y WHERE Y.COMPANY_CD = #{companyCd} AND A.PRNT_CLS_CD=Y.CLS_CD AND EQ_CLS = #{eqClsDiv}  AND CLS_REV_NO = #{clsRevNo}) PRNT_CLS_NM
+             , A.CLS_CD + ' [' + CLS_NM + ']' AS CLS_CD_NM
+             , UPPER(A.CLS_CD + ' [' + CLS_NM + ']') AS CLS_CAP_NM
+             , A.CLS_NM CLS_NM
+             , A.EQ_CLS
+             , A.CLS_LVL
+             , A.CLS_TYPE
+             , A.COMPANY_CD
+          FROM EQ0202R A
+         WHERE 1=1
+           AND A.EQ_CLS = 'EQ_LOC'
+           AND A.CLS_TYPE = 'E'
+           AND A.CLS_REV_NO = #{clsRevNo}
+           AND A.COMPANY_CD = #{companyCd}
+        <if test="clsNm != null &amp;&amp; clsNm != ''">
+           AND UPPER(C.CLS_NM) LIKE '%' + UPPER(#{clsNm}) + '%'
+        </if>
+         ORDER BY CLS_CD ASC
+    </select>
+
+    <select id="retrieveEQ0201List" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0201.retrieveEQ0201List */ ]]>
+        SELECT
+               A.PRNT_CLS_CD
+             , (SELECT Y.CLS_NM FROM EQ0202R Y WHERE Y.COMPANY_CD = #{companyCd} AND A.PRNT_CLS_CD=Y.CLS_CD AND EQ_CLS = #{eqClsDiv}  AND CLS_REV_NO = #{clsRevNo}) PRNT_CLS_NM
+             , A.CLS_CD
+             , A.CLS_NM
+             , A.CLS_REV_NO
+             , A.EQ_CLS
+             , A.CLS_CD OLD_CLS_CD
+             , A.MNG_ORG_CD
+             , (SELECT ORG_NM FROM SC_ORG O WHERE O.COMPANY_CD = #{companyCd} AND O.ORG_CD = A.MNG_ORG_CD) AS MNG_ORG_NM
+             , A.PLANT_CODE
+             , A.FACTORY_CODE
+             , A.CLS_LVL
+             , A.CLS_TYPE
+             , A.EQ_CLS_DIV
+             , CASE EQ_CLS WHEN 'EQ_TP' THEN CONVERT(FLOAT, A.POWER_EFFICIENT)
+               ELSE 0 END POWER_EFFICIENT
+             , A.COMPANY_CD
+          FROM EQ0202R A
+         WHERE EQ_CLS = #{eqClsDiv}
+        <if test="clsCd != null &amp;&amp; clsCd != ''">
+           AND PRNT_CLS_CD = #{clsCd}
+        </if>
+           AND CLS_REV_NO = #{clsRevNo}
+        <if test="filterClsCd != null &amp;&amp; filterClsCd != ''">
+           AND A.CLS_CD LIKE '%' + #{filterClsCd} + '%'
+        </if>
+        <if test="clsNm != null &amp;&amp; clsNm != ''">
+           AND A.CLS_NM LIKE '%' + #{clsNm} + '%'
+        </if>
+           AND A.COMPANY_CD = #{companyCd}
+         ORDER BY A.CLS_CD ASC
+    </select>
+
+
+    <!-- 종류 정보 저장  -->
+    <insert id="insertEQ0201" parameterType="map" >
+        <![CDATA[ /* eq0201.insertEQ0201 */ ]]>
+        INSERT INTO EQ0202R(
+               CLS_REV_NO
+             , PLANT_CODE
+             , FACTORY_CODE
+             , CLS_CD
+             , CLS_NM
+             , PRNT_CLS_CD
+             , EQ_CLS
+             , MNG_ORG_CD
+             , CLS_TYPE
+             , EQ_CLS_DIV
+             , CLS_LVL
+             , POWER_EFFICIENT
+             , COMPANY_CD
+             , FST_REG_USER_ID
+             , FST_REG_DT
+        )
+        VALUES (
+               #{clsRevNo}
+             , #{plantCode}
+             , #{factoryCode}
+             , #{clsCd}
+             , #{clsNm}
+             , #{prntClsCd}
+             , #{eqCls}
+             , #{mngOrgCd}
+             , 'E'
+             , #{eqClsDiv}
+             , (SELECT CLS_LVL + 1 FROM EQ0202R WHERE COMPANY_CD = #{companyCd} AND CLS_CD = #{prntClsCd} AND CLS_REV_NO = #{clsRevNo})
+             , #{powerEfficient}
+             , #{companyCd}
+             , #{fstRegUserId}
+             , GETDATE()
+        )
+    </insert>
+
+
+    <!-- 해당 종류ID정보 수정 -->
+    <update id="updateEQ0201" parameterType="map" >
+        <![CDATA[ /* eq0201.updateEQ0201 */ ]]>
+        UPDATE EQ0202R
+           SET
+               CLS_CD           = #{clsCd}
+             , CLS_NM           = #{clsNm}
+             , PRNT_CLS_CD      = #{prntClsCd}
+             , MNG_ORG_CD       = #{mngOrgCd}
+             , EQ_CLS_DIV       = #{eqClsDiv}
+             , CLS_LVL          = (SELECT CLS_LVL + 1 FROM EQ0202R WHERE CLS_CD = #{prntClsCd} AND CLS_REV_NO = #{clsRevNo} AND COMPANY_CD = #{companyCd})
+             , POWER_EFFICIENT  = #{powerEfficient}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE CLS_REV_NO = #{clsRevNo}
+           AND EQ_CLS = #{eqCls}
+           AND CLS_CD = #{oldClsCd}
+           AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <!-- 해당 종류ID 삭제 -->
+    <delete id="deleteEQ0201" parameterType="map" >
+        <![CDATA[ /* eq0201.deleteEQ0201 */ ]]>
+        DELETE
+          FROM EQ0202R
+         WHERE CLS_REV_NO = #{clsRevNo}
+           AND EQ_CLS = #{eqCls}
+           AND CLS_CD = #{oldClsCd}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+
+    <!-- 해당 종류ID정보 수정 -->
+    <update id="updateEQ0201Move" parameterType="map" >
+        <![CDATA[ /* eq0201.updateEQ0201Move */ ]]>
+        UPDATE EQ0201M
+           SET
+               PRNT_CLS_CD      = #{prntClsCd}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE REV_NO = #{revNo}
+           AND CLS_CD = #{clsCd}
+           AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <!-- 설비분류 리비전 마스터 목록 조회  -->
+    <select id="retrieveEQ0202MList" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0201.retrieveEQ0202MList */ ]]>
+        SELECT
+               X.CLS_REV_NO
+             , X.COMPANY_CD
+             , X.CLS_REV_START_YMD
+             , X.CLS_REV_STS
+             , DBO.FN_NAME(X.CLS_REV_STS,'EQ_REV_STS') AS CLS_REV_STS_NM
+             , X.EQ_CLS
+             , X.FST_REG_USER_ID
+             , X.FST_REG_DT
+          FROM EQ0202M X
+         WHERE 1=1
+           AND EQ_CLS = #{eqClsDiv}
+           AND COMPANY_CD = #{companyCd}
+           AND CLS_TYPE = 'E'
+         ORDER BY CLS_REV_STS ASC, CLS_REV_START_YMD DESC, CLS_REV_NO DESC
+    </select>
+
+    <select id="retrieveClsRevNoNextValue" parameterType="map" resultType="String" >
+    	<![CDATA[ /* eq0201.retrieveClsRevNoNextValue */ ]]>
+    	SELECT NEXT VALUE FOR DBO.CLS_REV_NO_SEQ_01 AS CLS_REV_NO
+    </select>
+
+    <insert id="insertEQ0202M" parameterType="map" >
+        <![CDATA[ /* eq0201.insertEQ0202M */ ]]>
+        INSERT INTO EQ0202M (
+               CLS_REV_NO
+             , CLS_REV_START_YMD
+             , CLS_REV_STS
+             , EQ_CLS
+             , CLS_TYPE
+             , COMPANY_CD
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        ) VALUES (
+               #{newClsRevNo}
+             , null
+             , '10'
+             , #{eqClsDiv}
+             , 'E'
+             , #{companyCd}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+
+    </insert>
+
+    <insert id="insertEQ0202R" parameterType="map" >
+        <![CDATA[ /* eq0201.insertEQ0202R */ ]]>
+        INSERT INTO EQ0202R(
+               CLS_REV_NO
+			 , CLS_CD
+			 , CLS_NM
+			 , PRNT_CLS_CD
+			 , EQ_CLS
+			 , CLS_LVL
+			 , USE_YN
+			 , ORG_CD
+			 , MNG_ORG_CD
+             , PLANT_CODE
+             , FACTORY_CODE
+             , CLS_TYPE
+             , EQ_CLS_DIV
+             , POWER_EFFICIENT
+             , COMPANY_CD
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        SELECT
+               #{newClsRevNo}
+			 , CLS_CD
+			 , CLS_NM
+			 , PRNT_CLS_CD
+			 , EQ_CLS
+			 , CLS_LVL
+			 , USE_YN
+			 , ORG_CD
+			 , MNG_ORG_CD
+             , PLANT_CODE
+             , FACTORY_CODE
+             , CLS_TYPE
+             , EQ_CLS_DIV
+             , POWER_EFFICIENT
+             , #{companyCd}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+          FROM EQ0201M X
+         WHERE X.CLS_REV_NO = #{clsRevNo}
+           AND X.EQ_CLS = #{eqClsDiv}
+           AND X.COMPANY_CD = #{companyCd}
+           AND X.CLS_TYPE = 'E'
+    </insert>
+
+    <select id="retrieveEQ0201PrcsTreePop" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0201.retrieveEQ0201PrcsTreePop */ ]]>
+	    WITH TB_A
+        AS (
+            SELECT A.CLS_CD
+                 , A.PRNT_CLS_CD
+                 , A.CLS_CD + ' [' + CLS_NM + ']' AS CLS_CD_NM
+                 , UPPER(A.CLS_CD + ' [' + CLS_NM + ']') AS CLS_CAP_NM
+                 , A.CLS_NM CLS_NM
+                 , A.EQ_CLS
+                 , 4 LV
+                 , A.CLS_TYPE
+                 , A.COMPANY_CD
+              FROM EQ0201M A
+             WHERE REV_NO = #{revNo}
+        	   AND CLS_CD = #{treeOrgCd} AND EQ_CLS = 'EQ_PRCS'
+        	   AND COMPANY_CD = #{companyCd}
+             UNION ALL
+            SELECT A.CLS_CD
+                 , A.PRNT_CLS_CD
+                 , A.CLS_CD + ' [' + A.CLS_NM + ']' AS CLS_CD_NM
+                 , UPPER(A.CLS_CD + ' [' + A.CLS_NM + ']') AS CLS_CAP_NM
+                 , A.CLS_NM CLS_NM
+                 , A.EQ_CLS
+                 , B.LV-1 LV
+                 , A.CLS_TYPE
+                 , A.COMPANY_CD
+              FROM EQ0201M A
+        	  JOIN TB_A B ON (B.PRNT_CLS_CD = A.CLS_CD AND B.COMPANY_CD = A.COMPANY_CD)
+        	 WHERE A.EQ_CLS = 'EQ_PRCS'
+        	   AND A.COMPANY_CD = #{companyCd}
+        ),
+        TB_B
+        AS (
+            SELECT A.CLS_CD
+                 , A.PRNT_CLS_CD
+                 , A.CLS_CD + ' [' + CLS_NM + ']' AS CLS_CD_NM
+                 , UPPER(A.CLS_CD + ' [' + CLS_NM + ']') AS CLS_CAP_NM
+                 , A.CLS_NM CLS_NM
+                 , A.EQ_CLS
+                 , 5 LV
+                 , A.CLS_TYPE
+                 , A.COMPANY_CD
+              FROM EQ0201M A
+             WHERE REV_NO = #{revNo}
+        	   AND PRNT_CLS_CD = #{treeOrgCd} AND EQ_CLS = 'EQ_PRCS'
+        	   AND A.COMPANY_CD = #{companyCd}
+             UNION ALL
+            SELECT A.CLS_CD
+                 , A.PRNT_CLS_CD
+                 , A.CLS_CD + ' [' + A.CLS_NM + ']' AS CLS_CD_NM
+                 , UPPER(A.CLS_CD + ' [' + A.CLS_NM + ']') AS CLS_CAP_NM
+                 , A.CLS_NM CLS_NM
+                 , A.EQ_CLS
+                 , B.LV + 1 LV
+                 , A.CLS_TYPE
+                 , A.COMPANY_CD
+              FROM EQ0201M A
+              JOIN TB_B B ON (B.CLS_CD = A.PRNT_CLS_CD AND B.COMPANY_CD = A.COMPANY_CD)
+             WHERE A.EQ_CLS = 'EQ_PRCS'
+               AND A.COMPANY_CD = #{companyCd}
+             <if test="treeDiv == 'EQ_PRCS_M'">
+             	<if test="treeLvl == 4">
+             		AND LV = '5'
+             	</if>
+             	<if test="treeLvl != 4">
+             		AND A.PRNT_CLS_CD = #{treeOrgCd}
+             	</if>
+
+
+
+             </if>
+        )
+        SELECT * FROM (
+            SELECT * FROM TB_A
+             UNION ALL
+            SELECT * FROM TB_B
+        ) C
+        WHERE 1=1
+          AND C.CLS_TYPE = 'E'
+        <if test="clsNm != null &amp;&amp; clsNm != ''">
+          AND UPPER(C.CLS_NM) LIKE '%' + UPPER(#{clsNm}) + '%'
+        </if>
+        ORDER BY CLS_CD ASC
+    </select>
+
+    <select id="retrieveEQ0201TpTreePop" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0201.retrieveEQ0201TpTreePop */ ]]>
+        SELECT
+               A.CLS_CD
+             , A.PRNT_CLS_CD
+             , A.CLS_CD + ' [' + CLS_NM + ']' AS CLS_CD_NM
+             , UPPER(A.CLS_CD + ' [' + CLS_NM + ']') AS CLS_CAP_NM
+             , A.CLS_NM CLS_NM
+             , A.EQ_CLS
+             , A.CLS_TYPE
+             , CASE WHEN A.POWER_EFFICIENT = NULL THEN '0'
+               ELSE CONVERT(VARCHAR, A.POWER_EFFICIENT) END POWER_EFFICIENT
+             , A.COMPANY_CD
+          FROM EQ0201M A
+         WHERE 1=1
+           AND A.REV_NO = #{revNo}
+           AND A.EQ_CLS = 'EQ_TP'
+           AND A.CLS_TYPE = #{clsType}
+           AND A.COMPANY_CD = #{companyCd}
+        <if test="clsNm != null &amp;&amp; clsNm != ''">
+           AND UPPER(A.CLS_NM) LIKE '%' + UPPER(#{clsNm}) + '%'
+        </if>
+    </select>
+
+    <select id="retrieveEQ0201LocTreePop" parameterType="map" resultType="map" >
+       <![CDATA[ /* eq0201.retrieveEQ0201LocTreePop */ ]]>
+	    SELECT
+               A.CLS_CD
+             , A.PRNT_CLS_CD
+             , A.CLS_CD + ' [' + CLS_NM + ']' AS CLS_CD_NM
+             , UPPER(A.CLS_CD + ' [' + CLS_NM + ']') AS CLS_CAP_NM
+             , A.CLS_NM CLS_NM
+             , A.EQ_CLS
+             , A.CLS_TYPE
+             , A.COMPANY_CD
+          FROM EQ0201M A
+         WHERE 1=1
+           AND A.EQ_CLS = 'EQ_LOC'
+           AND A.CLS_TYPE = 'E'
+           AND A.COMPANY_CD = #{companyCd}
+        <if test="factoryCode != null &amp;&amp; factoryCode != ''">
+           AND A.FACTORY_CODE = #{factoryCode}
+        </if>
+        <if test="clsNm != null &amp;&amp; clsNm != ''">
+           AND UPPER(A.CLS_NM) LIKE '%' + UPPER(#{clsNm}) + '%'
+        </if>
+    </select>
+
+    <update id="updateEQ0202RPowerEfficient" parameterType="map">
+        <![CDATA[ /* eq0201.updateEQ0202RPowerEfficient */ ]]>
+        UPDATE EQ0202R
+           SET POWER_EFFICIENT = #{powerEfficient}
+         WHERE CLS_REV_NO = #{clsRevNo}
+           AND EQ_CLS = 'EQ_TP'
+           AND CLS_TYPE = 'E'
+           AND CLS_CD = #{clsCd}
+           AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <update id="updateEQ0201MPowerEfficient" parameterType="map">
+        <![CDATA[ /* eq0201.updateEQ0201MPowerEfficient */ ]]>
+        UPDATE EQ0201M
+           SET POWER_EFFICIENT = ISNULL(#{powerEfficient}, 0)
+         WHERE CLS_REV_NO = #{clsRevNo}
+           AND EQ_CLS = 'EQ_TP'
+           AND CLS_TYPE = 'E'
+           AND CLS_CD = #{clsCd}
+           AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <select id="retrieveLineCd" parameterType="map" resultType="map" >
+        <![CDATA[ /* eq0201.retrieveLineCd */ ]]>
+        SELECT
+               CLS_CD AS CODE
+             , CLS_NM AS VALUE
+          FROM EQ0201M
+         WHERE CLS_TYPE = 'E'
+           AND EQ_CLS = 'EQ_PRCS'
+           AND CLS_LVL = '2'
+           AND COMPANY_CD = #{companyCd}
+         ORDER BY CLS_NM ASC
+    </select>
+
+</mapper>

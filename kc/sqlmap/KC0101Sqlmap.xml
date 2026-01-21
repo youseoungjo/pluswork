@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : WO0301
+* Description : 작업결과서 등록/수정/삭제
+* Author :
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveWO0301List : 작업결과서 목록 조회
+* insertWO0301 : 작업결과서 목록 추가
+* updateWO0301 : 작업결과서 목록 수정
+* deleteWO0301 : 작업결과서 목록 삭제
+*************************************************************************************-->
+<mapper namespace="kc0101">
+	<select id="retrieveKC0101ChartData" parameterType="map" resultType="map" >
+		<![CDATA[ /* wo0301.retrieveWO0301List */ ]]>
+		SELECT Y.ACT_NM AS SYMPTM_DESC
+			 , X.SYMPTM_CD
+		     , COUNT(X.SYMPTM_CD) AS SYMPTM_COUNT
+		FROM WO0102M X
+		INNER JOIN WO0303C Y ON (X.SYMPTM_CD = Y.ACT_CD AND Y.ACT_CLS = 'S')
+		   AND X.COMPANY_CD = 'IDR'
+		INNER JOIN WO0201M W ON (X.REQ_NO = W.REQ_NO)
+		WHERE 1=1
+		<if test="fWoTp != null &amp;&amp; fWoTp != ''">
+            AND W.WO_TP IN (${fWoTp})
+         </if>
+         <if test="fRepairTp != null &amp;&amp; fRepairTp != ''">
+            AND W.REPAIR_TP IN (${fRepairTp})
+         </if>
+		GROUP BY X.SYMPTM_CD, Y.ACT_NM
+ 	 </select>
+
+ 	 <select id="retrieveKC0101ChartDetail" parameterType="map" resultType="map" >
+		<![CDATA[ /* wo0301.retrieveKC0101ChartDetail */ ]]>
+		SELECT
+               X.WO_MNG_NO
+             , X.COMPANY_CD
+             , X.SYMPTM_CD
+    , X.FAIL_CD
+             , X.REPR_CD
+             , X.WORK_REGION_CD
+    , (SELECT ACT_NM FROM WO0303C WHERE COMPANY_CD = 'IDR' AND ACT_CD = X.SYMPTM_CD AND ACT_CLS = 'S')  AS SYMPTM_DESC
+    , (SELECT ACT_NM FROM WO0303C WHERE COMPANY_CD = 'IDR' AND ACT_CD = X.FAIL_CD AND ACT_CLS = 'F')  AS FAIL_DESC
+    , (SELECT ACT_NM FROM WO0303C WHERE COMPANY_CD = 'IDR' AND ACT_CD = X.REPR_CD AND ACT_CLS = 'R')  AS REPR_DESC
+             , X.CMMNT
+             , X.WO_NO
+             , X.SYMPTM_CMMNT
+             , X.FAIL_CMMNT
+             , X.REPR_CMMNT
+          FROM WO0303R X
+         WHERE 1=1
+           AND X.SYMPTM_CD = #{symptmCd}
+           AND X.COMPANY_CD = #{companyCd}
+         ORDER BY X.WO_MNG_NO ASC
+ 	 </select>
+</mapper>

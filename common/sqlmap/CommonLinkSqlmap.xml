@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="commonLink">
+    <select id="retrieveChkDiv" parameterType="map" resultType="map">
+        <![CDATA[ /* commonLink.retrieveChkDiv */ ]]>
+        SELECT
+               COMM_CD
+             , COMM_CD_NM
+             , COMM_CD_EXPL
+          FROM SC_COMM_CD
+         WHERE COMM_GRP_CD = 'CHK_DIV'
+        <if test="commCd != null &amp;&amp; commCd != ''">
+           AND UPPER(COMM_CD) LIKE '%' + UPPER(#{commCd}) + '%'
+        </if>
+        <if test="commCdNm != null &amp;&amp; commCdNm != ''">
+           AND UPPER(COMM_CD_NM) LIKE '%' + UPPER(#{commCdNm}) + '%'
+        </if>
+           AND USE_YN = 'Y'
+         ORDER BY ARRAY_ORD
+    </select>
+
+    <select id="retrieveScComm" parameterType="map" resultType="map">
+        <![CDATA[ /* commonLink.retrieveScComm */ ]]>
+        SELECT
+               COMM_CD
+             , COMM_CD_NM
+             , COMM_CD_EXPL
+          FROM SC_COMM_CD
+         WHERE COMM_GRP_CD = #{commGrpCd}
+        <if test="commCd != null &amp;&amp; commCd != ''">
+           AND UPPER(COMM_CD) LIKE '%' + UPPER(#{commCd}) + '%'
+        </if>
+        <if test="commCdNm != null &amp;&amp; commCdNm != ''">
+           AND UPPER(COMM_CD_NM) LIKE '%' + UPPER(#{commCdNm}) + '%'
+        </if>
+           AND USE_YN = 'Y'
+         ORDER BY ARRAY_ORD
+    </select>
+
+    <select id="retrieveWoStd" parameterType="map" resultType="map">
+        <![CDATA[ /* commonLink.retrieveWoStd */ ]]>
+        SELECT
+               STD_NO
+             , STD_NM
+             , CMMNT
+             , EQ_TP
+          FROM CO0501M X
+         WHERE USE_YN='Y'
+        <if test="stdNo != null &amp;&amp; stdNo != ''">
+           AND UPPER(STD_NO) LIKE '%' + UPPER(#{stdNo}) + '%'
+        </if>
+        <if test="stdNm != null &amp;&amp; stdNm != ''">
+           AND UPPER(STD_NM) LIKE '%' + UPPER(#{stdNm}) + '%'
+        </if>
+        <if test="eqTp != null &amp;&amp; eqTp != ''">
+           AND EQ_TP = #{eqTp}
+        </if>
+         ORDER BY STD_NO
+    </select>
+
+    <select id="retrieveStdJob" parameterType="map" resultType="map">
+        <![CDATA[ /* commonLink.retrieveStdJob */ ]]>
+        SELECT
+               SEQ_NO
+             , WORK_NM
+             , CMMNT
+          FROM CO0501J
+         WHERE 1=1
+        <if test="stdNo != null &amp;&amp; stdNo != ''">
+           AND STD_NO= #{stdNo}
+        </if>
+         ORDER BY STD_NO
+    </select>
+
+    <select id="retrieveStdCraft" parameterType="map" resultType="map">
+        <![CDATA[ /* commonLink.retrieveStdCraft */ ]]>
+        SELECT
+               SEQ_NO
+             , dbo.FN_NAME(CRAFT_CD, 'CRAFT')
+             , WORK_HOUR
+          FROM CO0501C
+         WHERE 1=1
+        <if test="stdNo != null &amp;&amp; stdNo != ''">
+           AND STD_NO= #{stdNo}
+        </if>
+         ORDER BY STD_NO
+    </select>
+
+    <select id="retrieveStdPart" parameterType="map" resultType="map">
+        <![CDATA[ /* commonLink.retrieveStdPart */ ]]>
+        SELECT
+               X.PART_CD
+             , (SELECT y.PART_NM FROM PT0101M Y WHERE X.PART_CD=Y.PART_CD) PART_NM
+             , X.USE_QTY
+             , X.SEQ_NO
+          FROM CO0501P X
+         WHERE 1=1
+        <if test="stdNo != null &amp;&amp; stdNo != ''">
+           AND X.STD_NO= #{stdNo}
+        </if>
+             ORDER BY x.STD_NO
+    </select>
+
+    <select id="retrieveUserList" parameterType="map" resultType="map">
+    <![CDATA[ /* commonLink.retrieveUserList */ ]]>
+        SELECT
+               X.USER_ID
+             , X.ORG_CD
+             , (SELECT ORG_NM FROM SC_ORG WHERE ORG_CD = X.ORG_CD) ORG_CD_NM
+             , X.USER_NM
+          FROM SC_USER X
+         WHERE X.USE_YN = 'Y'
+        <if test="userId != null &amp;&amp; userId != ''">
+           AND UPPER(X.USER_ID) LIKE '%' + UPPER(#{userId}) + '%'
+        </if>
+        <if test="userNm != null &amp;&amp; userNm != ''">
+           AND UPPER(X.USER_NM) LIKE '%' + UPPER(#{userNm}) + '%'
+        </if>
+        <if test="orgCd != null &amp;&amp; orgCd != ''">
+           AND X.ORG_CD = #{orgCd}
+        </if>
+         ORDER BY X.USER_ID
+    </select>
+
+    <select id="retrievePrntUnitCdList" parameterType="map" resultType="map">
+        <![CDATA[ /* commonLink.retrievePrntUnitCdList */ ]]>
+        SELECT
+               X.UNIT_CD
+             , X.UNIT_NM
+             , X.CMMNT
+          FROM CO0401M X
+         WHERE X.PRNT_UNIT_CD = '!'
+        <if test="prntUnitCd != null &amp;&amp; prntUnitCd != ''">
+           AND X.UNIT_CD = #{prntUnitCd}
+        </if>
+        <if test="unitCd != null &amp;&amp; unitCd != ''">
+           AND X.UNIT_CD IN (SELECT PRNT_UNIT_CD
+                               FROM CO0401M
+                              WHERE UNIT_CD = #{unitCd})
+        </if>
+        <if test="unitNm != null &amp;&amp; unitNm != ''">
+           AND X.UNIT_CD IN (SELECT PRNT_UNIT_CD
+                               FROM CO0401M
+                              WHERE UPPER(UNIT_NM) LIKE '%' + UPPER(#{unitNm}) + '%')
+        </if>
+          ORDER BY X.UNIT_CD
+    </select>
+
+    <select id="retrieveUnitCdList" parameterType="map" resultType="map">
+        <![CDATA[ /* commonLink.retrieveUnitCdList */ ]]>
+        SELECT
+               X.PRNT_UNIT_CD
+             , X.UNIT_CD
+             , X.UNIT_NM
+             , X.CMMNT
+          FROM CO0401M X
+         WHERE X.PRNT_UNIT_CD != '!'
+        <if test="prntUnitCd != null &amp;&amp; prntUnitCd != ''">
+           AND X.PRNT_UNIT_CD = #{prntUnitCd}
+        </if>
+          <if test="unitCd != null &amp;&amp; unitCd != ''">
+           AND X.UNIT_CD = #{unitCd}
+          </if>
+        <if test="unitNm != null &amp;&amp; unitNm != ''">
+           AND UPPER(X.UNIT_NM) LIKE '%' + UPPER(#{unitNm}) + '%'
+        </if>
+         ORDER BY X.UNIT_CD
+    </select>
+
+    <select id="retrieveIN0301CmplYmdList" parameterType="map" resultType="map">
+        <![CDATA[ /* commonLink.retrieveIN0301CmplYmdList */ ]]>
+        SELECT
+               X.WEEK_CNT
+             , X.DAY_WEEK
+             , dbo.FN_NAME(X.DAY_WEEK, 'COM_DAYS') DAY_WEEK_DESC
+             , X.ACTL_YMD
+             , CASE X.UNCHK_YN WHEN 'Y' THEN CONVERT(VARCHAR,X.FNL_EDIT_DT,23) ELSE X.CMPL_YMD END CMPL_YMD
+             , X.CMMNT
+             , X.CHK_SCHD_NO
+             , X.UNCHK_YN
+             , X.CHK_NO
+             , X.COMPANY_CD
+          FROM IN0401M X
+         WHERE X.CHK_NO = #{chkNo}
+           AND X.COMPANY_CD = #{companyCd}
+           AND X.ACTL_YMD <![CDATA[ >= ]]> #{actlYmdStart}
+           AND X.ACTL_YMD <![CDATA[ <= ]]> #{actlYmdEnd}
+         ORDER BY X.ACTL_YMD
+    </select>
+
+</mapper>

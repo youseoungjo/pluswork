@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : Code
+* Description : 스펙코드
+* Author :
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveCO0101MList : 스펙코드목록 조회
+* insertCO0101M : 스펙코드목록 추가
+* updateCO0101M : 스펙코드목록 수정
+* deleteCO0101M : 스펙코드목록 삭제
+
+* retrieveCO0101DList : 스펙상세 목록 조회
+* insertCO0101D : 스펙상세 목록 추가
+* updateCO0101D : 스펙상세 목록 수정
+* deleteCO0101D : 스펙상세 목록 삭제
+* deleteCO0101MByCO0101D : 공통코드 그룹에 포함된 Code 목록 삭제
+*************************************************************************************-->
+<mapper namespace="co0102">
+    <select id="retrieveCO0101MList" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0102.retrieveCO0101MList */ ]]>
+        SELECT
+               A.SPEC_NO
+             , A.SPEC_NM
+             , A.EQ_TP
+             , B.CLS_NM EQ_TP_NM
+             , A.FST_REG_DT
+             , A.FST_REG_USER_ID
+             , A.FNL_EDIT_DT
+             , A.FNL_EDIT_USER_ID
+          FROM CO0101M A
+		  LEFT OUTER JOIN EQ0201M B ON (B.CLS_CD = A.EQ_TP AND REV_NO = #{revNo})
+         WHERE 1=1
+        <if test="eqTpS != null &amp;&amp; eqTpS != ''">
+           AND UPPER(A.EQ_TP) LIKE '%'  +  UPPER(#{eqTpS})  +  '%'
+        </if>
+        <if test="specNmS != null &amp;&amp; specNmS != ''">
+           AND UPPER(A.SPEC_NM) LIKE '%'  +  UPPER(#{specNmS})  +  '%'
+        </if>
+        <if test="specDivS != null &amp;&amp; specDivS != ''">
+           AND A.SPEC_DIV = #{specDivS}
+        </if>
+         ORDER BY SPEC_NO
+    </select>
+
+    <insert id="insertCO0101M" parameterType="map" >
+        <![CDATA[ /* co0102.insertCO0101M */ ]]>
+        INSERT INTO CO0101M (
+               SPEC_DIV
+             , SPEC_NO
+             , SPEC_NM
+             , EQ_TP
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+         )
+         VALUES (
+               #{specDiv}
+             , #{specNo}
+             , #{specNm}
+             , #{eqTp}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <update id="updateCO0101M" parameterType="map" >
+        <![CDATA[ /* co0102.updateCO0101M */ ]]>
+        UPDATE CO0101M
+           SET
+               SPEC_DIV         = #{specDiv}
+             , SPEC_NM          = #{specNm}
+             , EQ_TP            = #{eqTp}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE SPEC_NO = #{specNo}
+    </update>
+
+    <delete id="deleteCO0101M" parameterType="map" >
+        <![CDATA[ /* co0102.deleteCO0101M */ ]]>
+        DELETE
+          FROM CO0101M
+            WHERE SPEC_NO = #{specNo}
+    </delete>
+
+    <select id="retrieveCO0101DList" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0102.retrieveCO0101DList */ ]]>
+        SELECT
+               SPEC_NO
+             , SPEC_DTL_NO
+             , SEQ_NO
+             , SPEC_DESC
+             , UNIT_CD
+             , UNIT_NM
+             , ARRAY_ORD
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+          FROM CO0101D
+         WHERE SPEC_NO = #{specNo}
+        <if test="specDescS != null &amp;&amp; specDescS != ''">
+           AND UPPER(SPEC_DESC) LIKE '%'  +  UPPER(#{specDescS})  +  '%'
+        </if>
+         ORDER BY ARRAY_ORD
+    </select>
+
+    <insert id="insertCO0101D" parameterType="map" >
+        <![CDATA[ /* co0102.insertCO0101D */ ]]>
+        INSERT INTO CO0101D (
+               SPEC_NO
+             , SPEC_DTL_NO
+             , SEQ_NO
+             , SPEC_DESC
+             , UNIT_CD
+             , UNIT_NM
+             , ARRAY_ORD
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{specNo}
+             , #{specDtlNo}
+             , (SELECT ISNULL(MAX(SEQ_NO) + 1,0) FROM CO0101D WHERE SPEC_NO = #{specNo})
+             , #{specDesc}
+             , #{unitCd}
+             , #{unitNm}
+             , #{arrayOrd}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <update id="updateCO0101D" parameterType="map" >
+        <![CDATA[ /* co0102.updateCO0101D */ ]]>
+        UPDATE CO0101D
+           SET
+               SPEC_DESC        = #{specDesc}
+             , UNIT_CD          = #{unitCd}
+             , UNIT_NM          = #{unitNm}
+             , ARRAY_ORD        = #{arrayOrd}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE SPEC_NO          = #{specNo}
+           AND SPEC_DTL_NO      = #{specDtlNo}
+           AND SEQ_NO           = #{seqNo}
+    </update>
+
+    <delete id="deleteCO0101D" parameterType="map" >
+        <![CDATA[ /* co0102.deleteCO0101D */ ]]>
+        DELETE
+          FROM CO0101D
+         WHERE SPEC_NO     = #{specNo}
+           AND SPEC_DTL_NO = #{specDtlNo}
+           AND SEQ_NO      = #{seqNo}
+    </delete>
+
+    <delete id="deleteCO0101MByCO0101D" parameterType="map" >
+        <![CDATA[ /* co0102.deleteCO0101MByCO0101D */ ]]>
+        DELETE
+          FROM CO0101D
+         WHERE SPEC_NO   = #{specNo}
+    </delete>
+
+    <select id="retrieveStdSpecList" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0102.retrieveStdSpecList */ ]]>
+        SELECT
+               A.SPEC_NO
+             , A.SPEC_NM
+             , A.EQ_TP AS EQ_TP
+             , B.CLS_NM + ' [' + A.EQ_TP + ']' AS EQ_TP_NM
+          FROM CO0101M A
+		  LEFT OUTER JOIN EQ0201M B ON (B.CLS_CD = A.EQ_TP AND REV_NO = #{revNo})
+         WHERE A.SPEC_DIV = #{specDivS}
+        <if test="feqTp != null &amp;&amp; feqTp != ''">
+           AND UPPER(A.EQ_TP) LIKE '%'  +  UPPER(#{feqTp})  +  '%'
+        </if>
+        <if test="fspecNo != null &amp;&amp; fspecNo != ''">
+           AND UPPER(A.SPEC_NM) LIKE '%'  +  UPPER(#{fspecNo})  +  '%'
+        </if>
+        <if test="fspecNm != null &amp;&amp; fspecNm != ''">
+           AND UPPER(A.SPEC_NM) LIKE '%'  +  UPPER(#{fspecNm})  +  '%'
+        </if>
+         ORDER BY SPEC_NO
+    </select>
+
+    <select id="retrieveSpecItemList" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0102.retrieveSpecItemList */ ]]>
+        SELECT
+               SPEC_NO
+             , SPEC_DTL_NO
+             , SEQ_NO
+             , SPEC_DESC
+             , UNIT_CD
+             , UNIT_NM
+          FROM CO0101D
+         WHERE SPEC_NO = #{specNo}
+         ORDER BY ARRAY_ORD
+    </select>
+
+</mapper>

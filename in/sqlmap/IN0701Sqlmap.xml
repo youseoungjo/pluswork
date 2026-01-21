@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : 미점검 리스트 검색
+* Description : 미점검 리스트 검색
+* Author : jit13
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveIN0501    : 미점검 리스트 조회
+* retrieveIN0501Sub : 미점검 리스트 조회
+*************************************************************************************-->
+<mapper namespace="in0701">
+     <!-- 미점검 리스트 조회 -->
+     <select id="retrieveIN0701" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0701.retrieveIN0701 */ ]]>
+        SELECT Y.ACTL_YMD
+             , X.COMPANY_CD
+             , Z.EQ_NO
+             , Z.EQ_NM
+             , X.CHK_NO
+             , X.CHK_NM
+             , X.CHK_TP
+             , X.ORG_CD
+             , dbo.FN_NAME(X.ORG_CD, 'DEPT') ORG_CD_DESC
+             , X.CYCLE_CD
+             , X.CYCLE_TP
+             , (X.CYCLE_CD + ' ' + dbo.FN_NAME(X.CYCLE_TP, 'PERIOD_TYPE')) CYCLE_DESC
+             , Y.CHK_SCHD_NO
+             , Y.CMMNT
+          FROM IN0201M X
+		 INNER JOIN IN0401M Y ON (Y.CHK_NO = X.CHK_NO AND Y.COMPANY_CD = X.COMPANY_CD)
+         INNER JOIN EQ0101M Z ON (Z.EQ_NO = X.EQ_NO AND Z.COMPANY_CD = X.COMPANY_CD)
+         WHERE Z.REV_NO = #{revNo}
+           AND X.COMPANY_CD = #{companyCd}
+        <if test="fStartDate != null &amp;&amp; fStartDate != ''">
+           <if test="fEndDate != null &amp;&amp; fEndDate != ''">
+           AND Y.ACTL_YMD BETWEEN #{fStartDate} AND #{fEndDate}
+           </if>
+        </if>
+           AND Y.CMPLT_YN <![CDATA[ <> ]]> 'Y'
+        <if test="funchkYn!= null &amp;&amp; funchkYn != ''">
+           AND Y.UNCHK_YN = #{funchkYn}
+        </if>
+        <if test="feqNo != null &amp;&amp; feqNo != ''">
+           AND EXISTS (
+               SELECT 1
+                 FROM EQ0101M J
+                WHERE J.EQ_NO   = X.EQ_NO
+                  AND J.COMPANY_CD = X.COMPANY_CD
+                  AND J.REV_NO  = #{revNo}
+                  AND J.ITEM_NO = #{feqNo}
+               )
+        </if>
+        <if test="forgCd != null &amp;&amp; forgCd != ''">
+           AND X.ORG_CD = #{forgCd}
+        </if>
+        <if test="fchkTp != null &amp;&amp; fchkTp != ''">
+           AND X.CHK_TP IN (${fchkTp})
+        </if>
+         ORDER BY Y.ACTL_YMD, X.CHK_NO DESC
+    </select>
+
+     <select id="retrieveIN0701ToTree" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0701.retrieveIN0701ToTree */ ]]>
+        WITH EQ_SUB
+          AS (SELECT CLS_CD,
+                     PRNT_CLS_CD,
+                     CLS_LVL,
+                     COMPANY_CD
+              FROM   EQ0201M
+              WHERE  EQ_CLS = #{eqClsDiv}
+                     AND CLS_CD IN (${eqNo})
+                     AND COMPANY_CD = #{companyCd}
+              UNION ALL
+              SELECT M.CLS_CD,
+                     M.PRNT_CLS_CD,
+                     M.CLS_LVL,
+                     M.COMPANY_CD
+              FROM   EQ0201M M
+                     JOIN EQ_SUB N
+                       ON N.CLS_CD = M.PRNT_CLS_CD AND N.COMPANY_CD = M.COMPANY_CD
+              WHERE  1 = 1)
+        SELECT Y.ACTL_YMD
+             , X.COMPANY_CD
+             , Z.EQ_NO
+             , Z.EQ_NM
+             , X.CHK_NO
+             , X.CHK_NM
+             , X.CHK_TP
+             , X.ORG_CD
+             , dbo.FN_NAME(X.ORG_CD, 'DEPT') ORG_CD_DESC
+             , X.CYCLE_CD
+             , X.CYCLE_TP
+             , (X.CYCLE_CD + ' ' + dbo.FN_NAME(X.CYCLE_TP, 'PERIOD_TYPE')) CYCLE_DESC
+             , Y.CHK_SCHD_NO
+          FROM IN0201M X
+		 INNER JOIN IN0401M Y ON (Y.CHK_NO = X.CHK_NO AND Y.COMPANY_CD = X.COMPANY_CD)
+         INNER JOIN EQ0101M Z ON (Z.EQ_NO = X.EQ_NO AND Z.COMPANY_CD = X.COMPANY_CD)
+         WHERE Z.REV_NO = #{revNo}
+           AND X.COMPANY_CD = #{companyCd}
+         <if test="eqClsDiv == 'EQ_TP'">
+          AND Z.EQ_TP IN (
+              SELECT CLS_CD FROM EQ_SUB
+              )
+         </if>
+         <if test="eqClsDiv == 'EQ_LOC'">
+          AND Z.EQ_LOC IN (
+                SELECT CLS_CD FROM EQ_SUB
+              )
+         </if>
+         <if test="eqClsDiv == 'EQ_PRCS'">
+          AND Z.EQ_PRCS IN (
+                SELECT CLS_CD FROM EQ_SUB
+              )
+         </if>
+         <if test="eqClsDiv == 'EQ_MY'">
+          AND Z.EQ_PRCS IN (
+                 SELECT EQ_PRCS
+                  FROM EQ0101M
+                 WHERE 1=1
+                   AND EQ_NO IN (${eqNo})
+                   AND COMPANY_CD = #{companyCd}
+              )
+          AND Z.EQ_NO IN (SELECT EQ_NO FROM EQ0101P WHERE USE_YN = 'Y' AND USER_ID = #{userId} AND COMPANY_CD = #{companyCd})
+         </if>
+
+         ORDER BY Y.ACTL_YMD, X.CHK_NO DESC
+    </select>
+
+    <!-- 점검일자 재지정  -->
+    <update id="updateIN0701List" parameterType="map" >
+        <![CDATA[ /* in0701.updateIN0701List */ ]]>
+        UPDATE IN0401M
+           SET
+               ACTL_YMD         = #{actlYmd}
+             , FNL_EDIT_DT    = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE CHK_SCHD_NO        = #{chkSchdNo}
+           AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <!-- 미점검 확인  -->
+    <update id="updateIN0701List2" parameterType="map" >
+        <![CDATA[ /* in0701.updateIN0701List2 */ ]]>
+        UPDATE IN0401M
+          SET
+              UNCHK_YN         = 'Y'
+            , CMMNT            = #{cmmnt}
+            , FNL_EDIT_DT    = GETDATE()
+            , FNL_EDIT_USER_ID = #{fnlEditUserId}
+        WHERE CHK_SCHD_NO        = #{chkSchdNo}
+          AND COMPANY_CD = #{companyCd}
+    </update>
+</mapper>

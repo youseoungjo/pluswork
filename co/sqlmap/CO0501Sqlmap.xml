@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : Code
+* Description : 현상코드관리
+* Author :
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveCO0501List : 현상코드목록 조회
+* insertCO0501 : 현상코드목록 추가
+* updateCO0501 : 현상코드목록 수정
+* deleteCO0501 : 현상코드목록 삭제
+*************************************************************************************-->
+<mapper namespace="co0501">
+    <select id="retrieveCO0501List" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0501.retrieveCO0501List */ ]]>
+        WITH EQ_TP
+        AS (
+            SELECT
+                A.PRNT_CLS_CD
+                 , CASE A.CLS_CD WHEN '!' THEN 'T' ELSE CLS_CD END CLS_CD
+                 , A.EQ_CLS
+                 , A.COMPANY_CD
+              FROM EQ0201M A
+          WHERE EQ_CLS = 'EQ_TP'
+            AND COMPANY_CD = #{companyCd}
+          <if test="fPrntActCd != null &amp;&amp; fPrntActCd != ''">
+            AND CLS_CD IN (${fPrntActCd})
+          </if>
+          UNION ALL
+            SELECT
+                A.PRNT_CLS_CD
+                 , CASE A.CLS_CD WHEN '!' THEN 'T' ELSE A.CLS_CD END CLS_CD
+                 , A.EQ_CLS
+                 , A.COMPANY_CD
+              FROM EQ0201M A
+           JOIN EQ_TP B ON A.CLS_CD = B.PRNT_CLS_CD AND A.COMPANY_CD = B.COMPANY_CD
+          WHERE A.EQ_CLS = 'EQ_TP'
+        )
+		SELECT
+               X.ACT_CLS
+             , X.ACT_CD
+             , X.ACT_NM
+             , X.PRNT_ACT_CD
+             , CASE WHEN X.PRNT_ACT_CD = 'T' THEN 'ALL'
+                    ELSE dbo.FN_NAME(X.PRNT_ACT_CD, 'EQ_TP') END PRNT_ACT_NM
+             , X.CMMNT
+             , X.ARRAY_ORD
+             , X.USE_YN
+          FROM WO0303C X
+         WHERE ACT_CLS = #{fActCls}
+         <if test="fPrntActCd != null &amp;&amp; fPrntActCd != ''">
+           AND PRNT_ACT_CD IN (SELECT CLS_CD FROM EQ_TP)
+         </if>
+         <if test="fActNm != null &amp;&amp; fActNm != ''">
+             AND UPPER(X.ACT_NM) LIKE '%'  +  UPPER(#{fActNm})  +  '%'
+         </if>
+         <if test="fUseYn != null &amp;&amp; fUseYn != ''">
+             AND X.USE_YN = #{fUseYn}
+         </if>
+           ORDER BY X.ARRAY_ORD
+    </select>
+
+    <select id="retrieveCO0502List" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0501.retrieveCO0502List */ ]]>
+        SELECT
+               X.ACT_CLS
+             , X.ACT_CD
+             , X.ACT_NM
+             , X.PRNT_ACT_CD
+             , ISNULL((SELECT DISTINCT(Y.ACT_NM) FROM WO0303C Y WHERE Y.ACT_CD = X.PRNT_ACT_CD),'ALL') PRNT_ACT_NM
+             , X.CMMNT
+             , X.ARRAY_ORD
+             , X.USE_YN
+          FROM WO0303C x
+         WHERE ACT_CLS = #{fActCls}
+        <if test="fPrntActCd != null &amp;&amp; fPrntActCd != ''">
+           AND PRNT_ACT_CD IN (${fPrntActCd})
+        </if>
+        <if test="fActCd != null &amp;&amp; fActCd != ''">
+           AND (PRNT_ACT_CD = #{fActCd} OR PRNT_ACT_CD = 'S')
+        </if>
+        <if test="fActNm != null &amp;&amp; fActNm != ''">
+           AND UPPER(X.ACT_NM) LIKE '%'  +  UPPER(#{fActNm})  +  '%'
+        </if>
+        <if test="fUseYn != null &amp;&amp; fUseYn != ''">
+           AND X.USE_YN = #{fUseYn}
+        </if>
+         ORDER BY X.ARRAY_ORD
+    </select>
+
+    <select id="retrieveCO0503List" parameterType="map" resultType="map" >
+       <![CDATA[ /* co0501.retrieveCO0503List */ ]]>
+       SELECT
+              X.ACT_CLS
+            , X.ACT_CD
+            , X.ACT_NM
+            , X.PRNT_ACT_CD
+            , ISNULL((SELECT DISTINCT(Y.ACT_NM) FROM WO0303C Y WHERE Y.ACT_CD = X.PRNT_ACT_CD),'ALL') PRNT_ACT_NM
+            , X.CMMNT
+            , X.ARRAY_ORD
+            , X.USE_YN
+         FROM WO0303C X
+        WHERE ACT_CLS = #{fActCls}
+      <if test="fPrntActCd != null &amp;&amp; fPrntActCd != ''">
+          AND PRNT_ACT_CD IN (${fPrntActCd})
+      </if>
+      <if test="fActCd != null &amp;&amp; fActCd != ''">
+          AND (PRNT_ACT_CD = #{fActCd} OR PRNT_ACT_CD = 'F')
+      </if>
+      <if test="fActNm != null &amp;&amp; fActNm != ''">
+          AND UPPER(X.ACT_NM) LIKE '%'  +  UPPER(#{fActNm})  +  '%'
+      </if>
+      <if test="fUseYn != null &amp;&amp; fUseYn != ''">
+          AND X.USE_YN = #{fUseYn}
+      </if>
+        ORDER BY X.ARRAY_ORD
+    </select>
+
+    <insert id="insertCO0501" parameterType="map" >
+        <![CDATA[ /* co0501.insertCO0501 */ ]]>
+        INSERT INTO WO0303C (
+               ACT_CLS
+             , ACT_CD
+             , ACT_NM
+             , PRNT_ACT_CD
+             , CMMNT
+             , ARRAY_ORD
+             , USE_YN
+             , FST_REG_USER_ID
+             , FST_REG_DT
+             , FNL_EDIT_USER_ID
+             , FNL_EDIT_DT
+        )
+        VALUES (
+               #{actCls}
+             , #{actCd}
+             , #{actNm}
+             , #{prntActCd}
+             , #{cmmnt}
+             , #{arrayOrd}
+             , #{useYn}
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+             , GETDATE()
+        )
+    </insert>
+
+    <update id="updateCO0501" parameterType="map" >
+        <![CDATA[ /* co0501.updateCO0501 */ ]]>
+        UPDATE WO0303C
+           SET ACT_NM           = #{actNm}
+             , CMMNT            = #{cmmnt}
+             , ARRAY_ORD        = #{arrayOrd}
+             , USE_YN           = #{useYn}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE ACT_CLS = #{actCls}
+           AND ACT_CD = #{actCd}
+           AND PRNT_ACT_CD = #{prntActCd}
+    </update>
+
+    <delete id="deleteCO0501" parameterType="map" >
+        <![CDATA[ /* co0501.deleteCO0501 */ ]]>
+        DELETE
+          FROM WO0303C
+         WHERE ACT_CLS = #{actCls}
+           AND ACT_CD = #{actCd}
+           AND PRNT_ACT_CD = #{prntActCd}
+    </delete>
+
+    <select id="retrieveCO0502Tree" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0501.retrieveCO0502Tree */ ]]>
+        WITH WO0303
+        AS
+        (
+            SELECT
+        	       'S' AS CODE
+        	     , '!' AS HGR_COMM_CD
+        		 , 'S[현상]' AS VALUE
+                 , '현상' AS REF_CD_1
+                 , '' AS REF_CD_2
+                 , '' AS REF_CD_3
+        	 UNION ALL
+             SELECT
+                    ACT_CD AS CODE
+                  , ACT_CLS AS HGR_COMM_CD
+                  , ACT_CD  +  '['  +  ACT_NM  +  ']' AS VALUE
+                  , ACT_NM AS REF_CD_1
+                  , '' AS REF_CD_2
+                  , PRNT_ACT_CD AS REF_CD_3
+               FROM WO0303C
+              WHERE ACT_CLS = 'S'
+        ) SELECT CODE, HGR_COMM_CD, VALUE, REF_CD_1, REF_CD_2, REF_CD_3 FROM WO0303 ORDER BY CODE
+    </select>
+
+    <select id="retrieveCO0503Tree" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0501.retrieveCO0503Tree */ ]]>
+        WITH WO0303
+        AS
+        (
+            SELECT
+        	       'F' AS CODE
+                 , 'S' AS HGR_COMM_CD
+                 , 'F[원인]' AS VALUE
+                 , '원인' AS REF_CD_1
+                 , '' AS REF_CD_2
+                 , '' AS REF_CD_3
+        	 UNION ALL
+             SELECT
+                    ACT_CD AS CODE
+                  , ACT_CLS AS HGR_COMM_CD
+                  , ACT_CD  +  '['  +  ACT_NM  +  ']' AS VALUE
+                  , ACT_NM AS REF_CD_1
+                  , '' AS REF_CD_2
+                  , PRNT_ACT_CD AS REF_CD_3
+               FROM WO0303C
+              WHERE ACT_CLS = 'F'
+        ) SELECT CODE, HGR_COMM_CD, VALUE, REF_CD_1, REF_CD_2, REF_CD_3 FROM WO0303
+    </select>
+
+    <select id="retrieveCO0501PopupList" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0501.retrieveCO0501PopupList */ ]]>
+        SELECT
+               X.ACT_CD AS ACT_CD
+             , X.ACT_CLS
+             , X.ACT_NM
+             , X.CMMNT
+             , X.ARRAY_ORD
+             , X.USE_YN
+          FROM WO0303C x
+         WHERE ACT_CLS = 'S'
+           AND USE_YN = 'Y'
+        <if test="fActCd != null &amp;&amp; fActCd != ''">
+           AND UPPER(X.ACT_CD) LIKE '%'  +  UPPER(#{fActCd})  +  '%'
+        </if>
+        <if test="fActNm != null &amp;&amp; fActNm != ''">
+           AND UPPER(X.ACT_NM) LIKE '%'  +  UPPER(#{fActNm})  +  '%'
+        </if>
+         ORDER BY X.ACT_NM, X.ARRAY_ORD
+     </select>
+
+     <select id="retrieveCO0502PopupList" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0501.retrieveCO0502PopupList */ ]]>
+        SELECT
+               X.ACT_CD AS ACT_CD
+             , X.ACT_CLS
+             , X.ACT_NM
+             , X.PRNT_ACT_CD
+             , ISNULL((SELECT DISTINCT(Y.ACT_NM) FROM WO0303C Y WHERE Y.ACT_CD = X.PRNT_ACT_CD),'ALL') PRNT_ACT_NM
+             , X.CMMNT
+             , X.ARRAY_ORD
+             , X.USE_YN
+          FROM WO0303C X
+         WHERE ACT_CLS = 'F'
+           AND USE_YN = 'Y'
+           AND (PRNT_ACT_CD = #{fPrntActCd} OR PRNT_ACT_CD = 'S')
+       <if test="fActCd != null &amp;&amp; fActCd != ''">
+           AND UPPER(X.ACT_CD) LIKE '%'  +  UPPER(#{fActCd})  +  '%'
+       </if>
+       <if test="fActNm != null &amp;&amp; fActNm != ''">
+           AND UPPER(X.ACT_NM) LIKE '%'  +  UPPER(#{fActNm})  +  '%'
+       </if>
+         ORDER BY X.ACT_NM, X.ARRAY_ORD
+     </select>
+
+    <select id="retrieveCO0503PopupList" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0501.retrieveCO0503PopupList */ ]]>
+        SELECT
+               X.ACT_CD AS ACT_CD
+             , X.ACT_CLS
+             , X.ACT_NM
+             , X.PRNT_ACT_CD
+             , ISNULL((SELECT DISTINCT(Y.ACT_NM) FROM WO0303C Y WHERE Y.ACT_CD = X.PRNT_ACT_CD),'ALL') PRNT_ACT_NM
+             , X.CMMNT
+             , X.ARRAY_ORD
+             , X.USE_YN
+          FROM WO0303C X
+         WHERE ACT_CLS = 'R'
+           AND USE_YN = 'Y'
+           AND (PRNT_ACT_CD = #{fPrntActCd} OR PRNT_ACT_CD = 'F')
+       <if test="fActCd != null &amp;&amp; fActCd != ''">
+           AND UPPER(X.ACT_CD) LIKE '%'  +  UPPER(#{fActCd})  +  '%'
+       </if>
+       <if test="fActNm != null &amp;&amp; fActNm != ''">
+           AND UPPER(X.ACT_NM) LIKE '%'  +  UPPER(#{fActNm})  +  '%'
+       </if>
+         ORDER BY X.ACT_NM, X.ARRAY_ORD
+    </select>
+</mapper>

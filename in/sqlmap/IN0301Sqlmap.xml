@@ -1,0 +1,466 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : 점검일정 생성
+* Description : 점검일정 생성
+* Author : jit13
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveIN0301    : 점검일정 생성 조회
+*************************************************************************************-->
+<mapper namespace="in0301">
+ <!-- 점검일정 생성 조회 -->
+    <select id="retrieveIN0301" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0301.retrieveIN0301 */ ]]>
+        <if test="feqNo != null &amp;&amp; feqNo != ''" >
+          <if test='fchildYn.equals("Y")' >
+          WITH EQ_PRCS_SUB
+          AS (
+               SELECT CLS_CD, PRNT_CLS_CD, COMPANY_CD
+                 FROM EQ0201M
+                WHERE EQ_CLS = 'EQ_PRCS' AND CLS_CD IN (SELECT EQ_PRCS FROM EQ0101M WHERE EQ_NO = #{feqNo} AND COMPANY_CD = #{companyCd}) AND CLS_TYPE = 'E'
+                  AND COMPANY_CD = #{companyCd}
+                UNION ALL
+               SELECT M.CLS_CD, M.PRNT_CLS_CD, M.COMPANY_CD
+                 FROM  EQ0201M M
+                 JOIN EQ_PRCS_SUB N ON M.PRNT_CLS_CD = N.CLS_CD AND M.COMPANY_CD = N.COMPANY_CD
+                WHERE M.EQ_CLS = 'EQ_PRCS' AND M.CLS_TYPE = 'E'
+		  )
+		  </if>
+		</if>
+        SELECT Y.EQ_NO
+             , X.COMPANY_CD
+             , Y.EQ_NM
+			 , (SELECT LineCode FROM EQ0201L WHERE FactoryCode = Y.FACTORY_CODE AND LineID = (SELECT EQ_LOC FROM EQ0101M WHERE EQ_PRCS = (SELECT EQ_LINE FROM EQ0101M WHERE EQ_NO = X.EQ_NO))) AS EQ_LINE
+             , (SELECT LineName FROM EQ0201L WHERE FactoryCode = Y.FACTORY_CODE AND LineID = (SELECT EQ_LOC FROM EQ0101M WHERE EQ_PRCS = (SELECT EQ_LINE FROM EQ0101M WHERE EQ_NO = X.EQ_NO))) AS EQ_LINE_NM
+             , X.CHK_NO
+             , X.CHK_NM
+             , X.CHK_TP
+             , (SELECT COMM_CD_NM FROM SC_COMM_CD WHERE SYS_CD = 'bpls' AND COMM_GRP_CD = 'CHECK_TYPE' AND COMM_CD = X.CHK_TP) AS CHK_TP_NM
+             , X.ORG_CD
+             , dbo.FN_NAME(X.ORG_CD, 'DEPT') ORG_CD_DESC
+             , X.CYCLE_CD
+             , X.CYCLE_TP
+             , dbo.FN_NAME(X.CYCLE_TP, 'CYCLE_TP') AS CYCLE_DESC
+             , Y.EQ_GRD
+             , X.DAY_WEEK
+			 , X.CHK_STD_MD
+         <foreach collection="selectYmdList" item="selectYmdList" open="" separator="" close="">
+             , ISNULL((SELECT COUNT(CHK_NO) FROM IN0401M WHERE COMPANY_CD = #{companyCd} AND CHK_NO = X.CHK_NO AND SUBSTRING(REPLACE(ACTL_YMD,'-',''),0,7) = #{selectYmdList.selectYmd} AND SUBSTRING(REPLACE(ACTL_YMD,'-',''),0,7) = #{selectYmdList.selectYmd} GROUP BY CHK_NO),0) A_${selectYmdList.selectYmd}
+         </foreach>
+          FROM IN0201M X, EQ0101M Y
+         WHERE X.EQ_NO = Y.EQ_NO
+           AND X.COMPANY_CD = Y.COMPANY_CD
+           AND X.COMPANY_CD = #{companyCd}
+           AND X.PM_TP = 'T'
+           AND X.ACT_YN = 'Y'
+           AND X.DAY_YN = 'N'
+           AND ISNULL(CYCLE_CD,'') != ''
+           AND ISNULL(CYCLE_TP,'') != ''
+        <if test="fchkNo != null &amp;&amp; fchkNo != ''">
+           AND X.CHK_NO = #{fchkNo}
+        </if>
+        <if test="chkNoS != null &amp;&amp; chkNoS != ''">
+           AND X.CHK_NO IN (${chkNoS})
+        </if>
+        <if test="forgCd != null &amp;&amp; forgCd != ''">
+           AND X.ORG_CD = #{forgCd}
+        </if>
+        <if test="feqGrd != null &amp;&amp; feqGrd != ''">
+           AND Y.EQ_GRD IN (${feqGrd})
+        </if>
+         ORDER BY Y.ITEM_NO, X.CHK_NO
+    </select>
+
+    <select id="retrieveIN0301Total" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0301.retrieveIN0301Total */ ]]>
+        SELECT TOTAL
+         <foreach collection="selectYmdSubList" item="selectYmdSubList" open="" separator="" close="">
+             , SUM(A_${selectYmdSubList.selectYmd}) AS A_${selectYmdSubList.selectYmd}
+         </foreach>
+        FROM (
+        SELECT '합계' AS TOTAL
+         <foreach collection="selectYmdList" item="selectYmdList" open="" separator="" close="">
+             , ISNULL((SELECT COUNT(CHK_NO) FROM IN0401M WHERE COMPANY_CD = #{companyCd} AND CHK_NO = X.CHK_NO AND SUBSTRING(REPLACE(ACTL_YMD,'-',''),0,7) = #{selectYmdList.selectYmd} AND SUBSTRING(REPLACE(ACTL_YMD,'-',''),0,7) = #{selectYmdList.selectYmd} GROUP BY CHK_NO),0) A_${selectYmdList.selectYmd}
+         </foreach>
+          FROM IN0201M X, EQ0101M Y
+         WHERE X.EQ_NO = Y.EQ_NO
+           AND X.COMPANY_CD = Y.COMPANY_CD
+           AND X.COMPANY_CD = #{companyCd}
+           AND X.PM_TP = 'T'
+           AND X.ACT_YN = 'Y'
+           AND X.DAY_YN = 'N'
+           AND ISNULL(CYCLE_CD,'') != ''
+           AND ISNULL(CYCLE_TP,'') != ''
+        <if test="fchkNo != null &amp;&amp; fchkNo != ''">
+           AND X.CHK_NO = #{fchkNo}
+        </if>
+        <if test="chkNoS != null &amp;&amp; chkNoS != ''">
+           AND X.CHK_NO IN (${chkNoS})
+        </if>
+        <if test="forgCd != null &amp;&amp; forgCd != ''">
+           AND X.ORG_CD = #{forgCd}
+        </if>
+        <if test="feqGrd != null &amp;&amp; feqGrd != ''">
+           AND Y.EQ_GRD IN (${feqGrd})
+        </if>
+        ) A
+        GROUP BY TOTAL
+    </select>
+
+    <select id="retrieveIN0301Sub" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0301.retrieveIN0301Sub */ ]]>
+        SELECT
+               A.USER_ID
+             , A.USER_NM
+             , A.COMPANY_CD
+             <foreach collection="selectYmdSubList" item="selectYmdSubList" open="" separator="" close="">
+             , SUM(A_${selectYmdSubList.selectYmd}) AS A_${selectYmdSubList.selectYmd}
+             </foreach>
+
+          FROM (
+                 SELECT Y.USER_ID
+                      , Y.COMPANY_CD
+                      , DBO.FN_NAME(Y.USER_ID, 'USER') AS USER_NM
+                      <foreach collection="selectYmdList" item="selectYmdList" open="" separator="" close="">
+                      , ISNULL((SELECT COUNT(CHK_NO) FROM IN0401M WHERE COMPANY_CD = #{companyCd} AND CHK_NO = X.CHK_NO AND SUBSTRING(REPLACE(ACTL_YMD,'-',''),0,7) = #{selectYmdList.selectYmd} AND SUBSTRING(REPLACE(ACTL_YMD,'-',''),0,7) = #{selectYmdList.selectYmd} GROUP BY CHK_NO),0) A_${selectYmdList.selectYmd}
+                      </foreach>
+                   FROM IN0201P Y
+                  INNER JOIN IN0201M X ON (Y.CHK_NO = X.CHK_NO AND Y.COMPANY_CD = X.COMPANY_CD)
+                  WHERE X.PM_TP = 'T'
+                    AND Y.COMPANY_CD = #{companyCd}
+                    AND X.ACT_YN = 'Y'
+                    AND X.DAY_YN = 'N'
+                    AND ISNULL(CYCLE_CD,'') != ''
+                    AND ISNULL(CYCLE_TP,'') != ''
+                 <if test="fchkNo != null &amp;&amp; fchkNo != ''">
+                    AND X.CHK_NO = #{fchkNo}
+                 </if>
+                 <if test="chkNoS != null &amp;&amp; chkNoS != ''">
+                    AND X.CHK_NO IN (${chkNoS})
+                 </if>
+                 <if test="forgCd != null &amp;&amp; forgCd != ''">
+                    AND X.ORG_CD = #{forgCd}
+                 </if>
+                 <if test="feqGrd != null &amp;&amp; feqGrd != ''">
+                    AND (SELECT EQ_GRD FROM EQ0101M WHERE EQ_NO = X.EQ_NO AND COMPANY_CD = #{companyCd}) IN (${feqGrd})
+                 </if>
+         ) A
+         GROUP BY USER_ID, USER_NM, COMPANY_CD
+
+    </select>
+
+
+    <select id="retrieveIN0301ActlYmd" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0301.retrieveIN0301ActlYmd */ ]]>
+        SELECT
+               X.ACTL_YMD
+             , X.COMPANY_CD
+             , X.CMPLT_YN
+             , X.CHK_SCHD_NO
+             , X.UNCHK_YN
+          FROM IN0401M X
+         WHERE 1=1
+           AND X.CHK_NO = #{chkNo}
+           AND X.COMPANY_CD = #{companyCd}
+           AND X.ACTL_YMD <![CDATA[ >= ]]> #{fStartDate}
+           AND X.ACTL_YMD <![CDATA[ <= ]]> #{fEndDate}
+         ORDER BY X.ACTL_YMD ASC
+     </select>
+
+    <insert id="saveIN0301ListActlYmd" parameterType="map" >
+        <![CDATA[ /* in0301.saveIN0301ListActlYmd */ ]]>
+        INSERT INTO IN0401M (
+               CHK_NO
+             , COMPANY_CD
+             , CHK_SCHD_NO
+             , CHK_REV_SEQ
+             , ACTL_YMD
+             , CHK_YYYY
+             , WEEK_CNT
+             , DAY_WEEK
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{chkNo}
+             , #{companyCd}
+             , NEXT VALUE FOR DBO.SQIN_CHK_SCHD_NO
+             , (SELECT B.CHK_REV_SEQ FROM IN0201M A INNER JOIN IN0201M_R B ON (A.COMPANY_CD = B.COMPANY_CD AND A.CHK_NO = B.CHK_NO AND A.CHK_REV_NO = B.CHK_REV_NO) WHERE A.CHK_NO = #{chkNo} AND A.COMPANY_CD = #{companyCd} )
+             , #{actlYmd}
+             , SUBSTRING(REPLACE(#{actlYmd},'-',''),0,5)
+             , CONVERT(CHAR, DATEPART(WEEK, CONVERT(CHAR(8),CONVERT(DATE,#{actlYmd}),112)))
+             , CASE DATEPART(WEEKDAY,CONVERT(DATE,#{actlYmd})) WHEN '1' THEN 'SUN' WHEN '2' THEN 'MON' WHEN '3' THEN 'TUE' WHEN '4' THEN 'WED' WHEN '5' THEN 'THU' WHEN '6' THEN 'FRI' ELSE'SAT' END
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <insert id="saveIN0301AllListActlYmd" parameterType="map" >
+        <![CDATA[ /* in0301.saveIN0301AllListActlYmd */ ]]>
+        INSERT INTO IN0401M (
+               CHK_NO
+             , COMPANY_CD
+             , CHK_SCHD_NO
+             , CHK_REV_SEQ
+             , ACTL_YMD
+             , CHK_YYYY
+             , WEEK_CNT
+             , DAY_WEEK
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{chkNo}
+             , #{companyCd}
+             , NEXT VALUE FOR DBO.SQIN_CHK_SCHD_NO
+             , (SELECT B.CHK_REV_SEQ FROM IN0201M A INNER JOIN IN0201M_R B ON (A.COMPANY_CD = B.COMPANY_CD AND A.CHK_NO = B.CHK_NO AND A.CHK_REV_NO = B.CHK_REV_NO) WHERE A.CHK_NO = #{chkNo} AND A.COMPANY_CD = #{companyCd} )
+             , CONVERT(VARCHAR, CONVERT(DATE,#{actlYmd}))
+             , SUBSTRING(REPLACE(#{actlYmd},'-',''),0,5)
+             , CONVERT(CHAR, DATEPART(WEEK, CONVERT(CHAR(8),CONVERT(DATE,#{actlYmd}),112)))
+             , CASE DATEPART(WEEKDAY,CONVERT(DATE,#{actlYmd})) WHEN '1' THEN 'SUN' WHEN '2' THEN 'MON' WHEN '3' THEN 'TUE' WHEN '4' THEN 'WED' WHEN '5' THEN 'THU' WHEN '6' THEN 'FRI' ELSE'SAT' END
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <update id="updateIN0301ListActlYmd" parameterType="map" >
+        <![CDATA[ /* in0301.updateIN0301ListActlYmd */ ]]>
+        UPDATE IN0401M
+          SET
+               WEEK_CNT         = CONVERT(CHAR, DATEPART(WEEK, CONVERT(CHAR(8),CONVERT(DATE,#{actlYmd}),112)))
+             , CHK_YYYY         = SUBSTRING(REPLACE(#{actlYmd},'-',''),0,5)
+             , DAY_WEEK         = CASE DATEPART(WEEKDAY,CONVERT(DATE,#{actlYmd})) WHEN '1' THEN 'SUN' WHEN '2' THEN 'MON' WHEN '3' THEN 'TUE' WHEN '4' THEN 'WED' WHEN '5' THEN 'THU' WHEN '6' THEN 'FRI' ELSE'SAT' END
+             , ACTL_YMD         = #{actlYmd}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE CHK_SCHD_NO = #{chkSchdNo}
+           AND COMPANY_CD  = #{companyCd}
+    </update>
+
+    <delete id="deleteIN0301ListActlYmd" parameterType="map" >
+        <![CDATA[ /* in0301.deleteIN0301ListActlYmd */ ]]>
+           DELETE
+             FROM IN0401M
+            WHERE CHK_SCHD_NO = #{chkSchdNo}
+              AND COMPANY_CD = #{companyCd}
+              AND CMPLT_YN = 'N'
+    </delete>
+
+    <select id="findCheckInfoIN0301" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0301.findCheckInfoIN0301 */ ]]>
+        SELECT
+               CHK_NO
+             , COMPANY_CD
+             , CHK_TP
+             , CYCLE_CD
+             , CYCLE_TP
+             , ISNULL(LAST_CHK_YMD, #{fStartDate}) LAST_CHK_YMD
+             , DAY_WEEK
+             , CAL_CD
+             , CHK_STD_MD
+          FROM IN0201M
+         WHERE CHK_NO = #{chkNo}
+           AND COMPANY_CD = #{companyCd}
+           AND ACT_YN = 'Y'
+    </select>
+
+    <select id="findWorkingDay" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0301.findWorkingDay */ ]]>
+        SELECT EXPORT_YMD
+          FROM MT0301D
+         WHERE CAL_CD = #{calCd}
+           AND COMPANY_CD = #{companyCd}
+           AND WORK_YN = 'Y'
+           AND EXPORT_YMD = CONVERT(VARCHAR, CONVERT(DATE,#{checkDate}))
+    </select>
+
+    <select id="retrieveMT0301M" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0301.retrieveMT0301M */ ]]>
+           SELECT COL_NAME
+             FROM (
+                    SELECT '1' COL_NAME, SUN COL_VALUE  FROM MT0301M WHERE CAL_CD = #{calCd} AND COMPANY_CD = #{companyCd}
+                     UNION
+                    SELECT '2' COL_NAME, MON COL_VALUE  FROM MT0301M WHERE CAL_CD = #{calCd} AND COMPANY_CD = #{companyCd}
+                     UNION
+                    SELECT '3' COL_NAME, TUE COL_VALUE  FROM MT0301M WHERE CAL_CD = #{calCd} AND COMPANY_CD = #{companyCd}
+                     UNION
+                    SELECT '4' COL_NAME, WED COL_VALUE  FROM MT0301M WHERE CAL_CD = #{calCd} AND COMPANY_CD = #{companyCd}
+                     UNION
+                    SELECT '5' COL_NAME, THU COL_VALUE  FROM MT0301M WHERE CAL_CD = #{calCd} AND COMPANY_CD = #{companyCd}
+                     UNION
+                    SELECT '6' COL_NAME, FRI COL_VALUE  FROM MT0301M WHERE CAL_CD = #{calCd} AND COMPANY_CD = #{companyCd}
+                     UNION
+                    SELECT '7' COL_NAME, SAT COL_VALUE  FROM MT0301M WHERE CAL_CD = #{calCd} AND COMPANY_CD = #{companyCd}
+            ) B
+              WHERE B.COL_VALUE = 'Y'
+    </select>
+
+    <delete id="createBeforeDeleteIN0301List" parameterType="map" >
+     <![CDATA[ /* in0301.createBeforeDeleteIN0301List */ ]]>
+        DELETE
+          FROM IN0401M
+         WHERE CHK_NO = #{chkNo}
+           AND COMPANY_CD = #{companyCd}
+           AND ACTL_YMD <![CDATA[ >= ]]> #{fStartDate}
+           AND ACTL_YMD <![CDATA[ <= ]]> #{fEndDate}
+           AND CMPLT_YN = 'N'
+    </delete>
+
+    <select id="checkActualDate" parameterType="map">
+       <![CDATA[ /* in0301.checkActualDate */ ]]>
+       SELECT '1'
+         FROM IN0401M
+        WHERE CHK_NO = #{chkNo}
+          AND COMPANY_CD = #{companyCd}
+          AND ACTL_YMD = #{checkDate}
+    </select>
+
+    <!-- 날짜 가져오기  -->
+    <select id="retrieveIN0301Ymd" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0301.retrieveIN0301Ymd */ ]]>
+       WITH T AS (
+           SELECT 0 AS LEVEL
+        	UNION ALL
+           SELECT LEVEL + 1 FROM T WHERE LEVEL+1 <![CDATA[ <= ]]> DATEDIFF(mm,CONVERT(DATETIME, #{fStartDate}), CONVERT(DATETIME, #{fEndDate}))
+        )
+        SELECT CONVERT(CHAR(6), DATEADD(MONTH, LEVEL, CONVERT(datetime, #{fStartDate})), 112) SELECT_YMD FROM T
+
+    </select>
+
+    <!--  계획일 하루전으로 변경 W/O 미생성 대상만 적용  -->
+    <update id="moveDayMinusIN0301" parameterType="map" >
+        <![CDATA[ /* in0301.moveDayMinusIN0301 */ ]]>
+        UPDATE IN0401M
+           SET
+               ACTL_YMD         = ${moveDays}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE CHK_NO = #{chkNo}
+           AND COMPANY_CD = #{companyCd}
+           AND CMPLT_YN = 'N'
+           AND ACTL_YMD <![CDATA[ >= ]]> #{fStartDate}
+           AND ACTL_YMD <![CDATA[ <= ]]> #{fEndDate}
+    </update>
+
+    <!-- 계획일 하루후로 변경 W/O 미생성 대상만 적용  -->
+    <update id="moveDayPlusIN0301" parameterType="map" >
+        <![CDATA[ /* in0301.moveDayPlusIN0301 */ ]]>
+        UPDATE IN0401M
+           SET
+               ACTL_YMD         = ${moveDays}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE CHK_NO = #{chkNo}
+           AND COMPANY_CD = #{companyCd}
+           AND CMPLT_YN = 'N'
+           AND ACTL_YMD <![CDATA[ >= ]]> #{fStartDate}
+           AND ACTL_YMD <![CDATA[ <= ]]> #{fEndDate}
+    </update>
+
+    <select id="retrieveWeekChk" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0301.retrieveWeekChk */ ]]>
+           SELECT COL_NAME
+             FROM (
+                    SELECT '1' COL_NAME, SUN COL_VALUE  FROM MT0301M WHERE CAL_CD = #{calCd} AND COMPANY_CD = #{companyCd}
+                     UNION
+                    SELECT '2' COL_NAME, MON COL_VALUE  FROM MT0301M WHERE CAL_CD = #{calCd} AND COMPANY_CD = #{companyCd}
+                     UNION
+                    SELECT '3' COL_NAME, TUE COL_VALUE  FROM MT0301M WHERE CAL_CD = #{calCd} AND COMPANY_CD = #{companyCd}
+                     UNION
+                    SELECT '4' COL_NAME, WED COL_VALUE  FROM MT0301M WHERE CAL_CD = #{calCd} AND COMPANY_CD = #{companyCd}
+                     UNION
+                    SELECT '5' COL_NAME, THU COL_VALUE  FROM MT0301M WHERE CAL_CD = #{calCd} AND COMPANY_CD = #{companyCd}
+                     UNION
+                    SELECT '6' COL_NAME, FRI COL_VALUE  FROM MT0301M WHERE CAL_CD = #{calCd} AND COMPANY_CD = #{companyCd}
+                     UNION
+                    SELECT '7' COL_NAME, SAT COL_VALUE  FROM MT0301M WHERE CAL_CD = #{calCd} AND COMPANY_CD = #{companyCd}
+            ) B
+              WHERE B.COL_VALUE = 'Y'
+                AND B.COL_NAME = #{oringDayWeekStr}
+    </select>
+
+    <select id="selectIN0201MList" parameterType="map" resultType="map" >
+        <![CDATA[ /* in0301.selectIN0201MList */ ]]>
+        SELECT
+              X.CHK_NO
+            , X.COMPANY_CD
+            , X.CYCLE_CD
+            , X.CYCLE_TP
+            , X.DAY_WEEK
+            , X.CHK_STD_MD
+            , X.EQ_NO
+            , ISNULL(X.CAL_CD, '') AS CAL_CD
+         FROM IN0201M X
+        WHERE X.CHK_NO IN (${chkNoS})
+          AND X.COMPANY_CD = #{companyCd}
+    </select>
+
+    <update id="updateIN0101Cycle" parameterType="map">
+        <![CDATA[ /* in0301.updateIN0101Cycle */ ]]>
+        UPDATE IN0201M
+           SET CHK_STD_MD   = #{chkStdMd}
+             , CYCLE_CD     = #{cycleCd}
+             , CYCLE_TP     = #{cycleTp}
+             , DAY_WEEK     = #{dayWeek}
+         WHERE CHK_NO = #{chkNo}
+           AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <insert id="insertIN0201P" parameterType="map" >
+        <![CDATA[ /* in0301.insertIN0201P */ ]]>
+        INSERT INTO IN0201P (
+               USER_SEQ
+             , COMPANY_CD
+             , CHK_NO
+             , USER_ID
+             , FST_REG_USER_ID
+             , FST_REG_DT
+             , FNL_EDIT_USER_ID
+             , FNL_EDIT_DT
+        ) VALUES (
+               #{userSeq}
+             , #{companyCd}
+             , #{chkNo}
+             , #{userId}
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+        )
+
+    </insert>
+
+    <update id="updateIN0201P" parameterType="map" >
+        <![CDATA[ /* in0301.updateIN0201P */ ]]>
+        UPDATE IN0201P
+          SET
+              USER_ID          = #{userId}
+            , FNL_EDIT_DT      = GETDATE()
+            , FNL_EDIT_USER_ID = #{fnlEditUserId}
+        WHERE USER_SEQ = #{userSeq}
+          AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <delete id="deleteIN0201P" parameterType="map" >
+        <![CDATA[ /* in0301.deleteIN0201P */ ]]>
+        DELETE
+          FROM IN0201P
+         WHERE USER_SEQ = #{userSeq}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+
+
+
+</mapper>

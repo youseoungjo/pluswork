@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : Code
+* Description : 단위코드
+* Author :
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveCO0201MList : 단위코드목록 조회
+* insertCO0201M : 단위코드목록 추가
+* updateCO0201M : 단위코드목록 수정
+* deleteCO0201M : 단위코드목록 삭제
+
+* retrieveCO0201DList : 단위상세 목록 조회
+* insertCO0201D : 단위상세 목록 추가
+* updateCO0201D : 단위상세 목록 수정
+* deleteCO0201D : 단위상세 목록 삭제
+* deleteCO0201MByCO0401D : 공통코드 그룹에 포함된 Code 목록 삭제
+*************************************************************************************-->
+<mapper namespace="co0201">
+    <select id="retrieveCO0201MList" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0201.retrieveCO0201MList */ ]]>
+        SELECT
+               A.PRNT_UNIT_CD
+             , A.COMPANY_CD
+             , A.UNIT_CD
+             , A.UNIT_NM
+             , A.CMMNT
+             , A.SEQ_NO
+             , A.FST_REG_DT
+             , A.FST_REG_USER_ID
+             , A.FNL_EDIT_DT
+             , A.FNL_EDIT_USER_ID
+          FROM CO0401M A
+         WHERE A.PRNT_UNIT_CD = '!'
+           AND A.COMPANY_CD = #{companyCd}
+        <if test="unitNmS != null &amp;&amp; unitNmS != ''">
+           AND UPPER(A.UNIT_NM) LIKE '%'  +  UPPER(#{unitNmS})  +  '%'
+        </if>
+        <if test="unitCdS != null &amp;&amp; unitCdS != ''">
+           AND UPPER(A.UNIT_CD) LIKE '%'  +  UPPER(#{unitCdS})  +  '%'
+        </if>
+         ORDER BY A.SEQ_NO, A.PRNT_UNIT_CD, A.UNIT_CD
+    </select>
+
+    <insert id="insertCO0201M" parameterType="map" >
+        <![CDATA[ /* co0201.insertCO0201M */ ]]>
+        INSERT INTO CO0401M (
+              PRNT_UNIT_CD
+            , COMPANY_CD
+            , UNIT_CD
+            , UNIT_NM
+            , CMMNT
+            , SEQ_NO
+            , FST_REG_DT
+            , FST_REG_USER_ID
+            , FNL_EDIT_DT
+            , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{prntUnitCd}
+             , #{companyCd}
+             , #{unitCd}
+             , #{unitNm}
+             , #{cmmnt}
+             , #{seqNo}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+       )
+    </insert>
+
+    <update id="updateCO0201M" parameterType="map" >
+        <![CDATA[ /* co0201.updateCO0201M */ ]]>
+        UPDATE CO0401M
+           SET
+               UNIT_NM          = #{unitNm}
+             , CMMNT            = #{cmmnt}
+             , SEQ_NO           = #{seqNo}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE UNIT_CD = #{unitCd}
+           AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <delete id="deleteCO0201M" parameterType="map" >
+        <![CDATA[ /* co0201.deleteCO0201M */ ]]>
+        DELETE
+          FROM CO0401M
+         WHERE UNIT_CD = #{unitCd}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+
+    <select id="retrieveCO0201DList" parameterType="map" resultType="map" >
+        <![CDATA[ /* co0201.retrieveCO0201DList */ ]]>
+        SELECT
+               A.PRNT_UNIT_CD
+             , A.COMPANY_CD
+             , A.UNIT_CD
+             , A.UNIT_NM
+             , A.CMMNT
+             , A.SEQ_NO
+             , A.FST_REG_DT
+             , A.FST_REG_USER_ID
+             , A.FNL_EDIT_DT
+             , A.FNL_EDIT_USER_ID
+         FROM CO0401M A
+        WHERE A.PRNT_UNIT_CD = #{unitCd}
+          AND A.COMPANY_CD = #{companyCd}
+    </select>
+
+    <insert id="insertCO0201D" parameterType="map" >
+        <![CDATA[ /* co0201.insertCO0201D */ ]]>
+        INSERT INTO CO0401M (
+               PRNT_UNIT_CD
+             , COMPANY_CD
+             , UNIT_CD
+             , UNIT_NM
+             , CMMNT
+             , SEQ_NO
+             , FST_REG_DT
+             , FST_REG_USER_ID
+             , FNL_EDIT_DT
+             , FNL_EDIT_USER_ID
+        )
+        VALUES (
+               #{prntUnitCd}
+             , #{companyCd}
+             , #{unitCd}
+             , #{unitNm}
+             , #{cmmnt}
+             , #{seqNo}
+             , GETDATE()
+             , #{fstRegUserId}
+             , GETDATE()
+             , #{fnlEditUserId}
+        )
+    </insert>
+
+    <update id="updateCO0201D" parameterType="map" >
+        <![CDATA[ /* co0201.updateCO0201D */ ]]>
+        UPDATE CO0401M
+           SET
+               UNIT_NM          = #{unitNm}
+             , CMMNT            = #{cmmnt}
+             , SEQ_NO           = #{seqNo}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE UNIT_CD = #{unitCd}
+           AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <delete id="deleteCO0201D" parameterType="map" >
+        <![CDATA[ /* co0201.deleteCO0201D */ ]]>
+        DELETE
+          FROM CO0401M
+         WHERE UNIT_CD = #{unitCd}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+
+    <delete id="deleteCO0201MByCO0201D" parameterType="map" >
+        <![CDATA[ /* co0201.deleteCO0201MByCO0201D */ ]]>
+        DELETE
+          FROM CO0401M
+         WHERE PRNT_UNIT_CD = #{unitCd}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+</mapper>
