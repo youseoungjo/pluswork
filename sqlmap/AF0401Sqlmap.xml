@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : AF0401
+* Description : 종류
+* Author :
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveAF0401List : 메뉴 목록 조회
+* insertAF0401 : 종류 목록 추가
+* updateAF0401 : 종류 목록 수정
+* deleteAF0401 : 종류 목록 삭제
+*************************************************************************************-->
+<mapper namespace="af0401">
+    <select id="retrieveAF0401Tree" parameterType="map" resultType="map" >
+       <![CDATA[ /* af0401.retrieveAF0401Tree */ ]]>
+        SELECT DISTINCT
+               A.ORG_CD
+             , A.ORG_NM
+             , A.ORG_CD + ' [' + ORG_NM + ']' AS ORG_CD_NM
+             , A.HGR_ORG_CD
+             , A.COMPANY_CD
+          FROM SC_ORG A
+         WHERE 1=1
+           AND A.COMPANY_CD = #{companyCd}
+    </select>
+
+    <select id="retrieveAF0401List" parameterType="map" resultType="map" >
+        <![CDATA[ /* af0401.retrieveAF0401List */ ]]>
+        SELECT
+               X.USER_ID
+             , X.USER_NM
+             , (X.USER_NM  +  ' '  +  X.USER_POSIT_CD) USER_POSIT
+             , X.ORG_CD
+             , dbo.FN_NAME(X.ORG_CD, 'DEPT') ORG_CD_NM
+             , X.USER_POSIT_CD
+             , '' FLOW_TP
+             , X.COMPANY_CD
+          FROM SC_USER X
+         WHERE 1 = 1
+           AND X.COMPANY_CD = #{companyCd}
+        <if test="orgCd != null &amp;&amp; orgCd != ''">
+           AND X.ORG_CD = #{orgCd}
+        </if>
+        <if test="fUserId != null &amp;&amp; fUserId != ''">
+           AND X.USER_ID = #{fUserId}
+        </if>
+        <if test="fUserNm != null &amp;&amp; fUserNm != ''">
+           AND UPPER(X.USER_NM) LIKE '%' + UPPER(#{fUserNm}) + '%'
+        </if>
+         ORDER BY X.USER_ID ASC
+    </select>
+
+    <select id="retrieveAF0401Flow" parameterType="map" resultType="map" >
+        <![CDATA[ /* af0401.retrieveAF0401Flow */ ]]>
+        SELECT
+               FLOW_NO
+             , COMPANY_CD
+             , TITLE
+             , FLOW_TP
+          FROM AF0102M
+         WHERE 1 = 1
+           AND COMPANY_CD = #{companyCd}
+      <if test="flowTp != null &amp;&amp; flowTp != ''">
+           AND FLOW_TP = #{flowTp}
+        <if test='flowTp.equals("D")'>
+           AND ORG_CD = #{orgCd}
+        </if>
+        <if test='flowTp.equals("U")'>
+           AND USER_ID = #{userId}
+        </if>
+      </if>
+         ORDER BY USER_ID ASC
+    </select>
+
+    <select id="retrieveAF0401Line" parameterType="map" resultType="map" >
+        <![CDATA[ /* af0401.retrieveAF0401Line */ ]]>
+        SELECT
+               X.SEQ_NO
+             , X.COMPANY_CD
+             , X.FLOW_NO
+             , X.FLOW_DTL_NO
+             , X.APPR_DIV
+             , X.USER_ID
+             , X.USER_ID  + ' / ' +  dbo.FN_NAME(X.USER_ID, 'USER')  + ' / ' +
+               (SELECT dbo.FN_NAME(A.ORG_CD, 'DEPT')
+                  FROM SC_USER A
+                 WHERE A.USER_ID = X.USER_ID) FLOW_USER_INFO
+          FROM AF0102D X
+         WHERE FLOW_NO = #{flowNo}
+           AND COMPANY_CD = #{companyCd}
+         ORDER BY SEQ_NO ASC
+    </select>
+
+    <insert id="insertAF0401Flow" parameterType="map" >
+         <![CDATA[ /* af0401.insertAF0401Flow */ ]]>
+         INSERT INTO AF0102M (
+                FLOW_NO
+              , COMPANY_CD
+              , TITLE
+              , FLOW_TP
+              , USER_ID
+              , ORG_CD
+              , FST_REG_USER_ID
+              , FST_REG_DT
+         )
+         VALUES (
+                #{flowNo}
+              , #{companyCd}
+              , #{title}
+              , #{flowTp}
+              , #{userId}
+              , #{orgCd}
+              , #{fstRegUserId}
+              , GETDATE()
+         )
+    </insert>
+
+
+    <update id="updateAF0401Flow" parameterType="map" >
+        <![CDATA[ /* af0401.updateAF0401Flow */ ]]>
+        UPDATE AF0102M
+           SET
+               TITLE           = #{title}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE FLOW_NO = #{flowNo}
+           AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <delete id="deleteAF0401Flow" parameterType="map" >
+        <![CDATA[ /* af0401.deleteAF0401Flow */ ]]>
+        DELETE
+          FROM AF0102M
+         WHERE FLOW_NO = #{flowNo}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+
+    <insert id="insertAF0401Line" parameterType="map" >
+        <![CDATA[ /* af0401.insertAF0401Line */ ]]>
+        INSERT INTO AF0102D (
+               FLOW_NO
+             , COMPANY_CD
+             , FLOW_DTL_NO
+             , SEQ_NO
+             , APPR_DIV
+             , USER_ID
+             , FST_REG_USER_ID
+             , FST_REG_DT
+         )
+         VALUES (
+               #{flowNo}
+             , #{companyCd}
+             , NEXT VALUE FOR DBO.SQFLOW_DTL_NO_01
+             , #{seqNo}
+             , #{apprDiv}
+             , #{userId}
+             , #{fstRegUserId}
+             , GETDATE()
+         )
+    </insert>
+
+    <update id="updateAF0401Line" parameterType="map" >
+        <![CDATA[ /* af0401.updateAF0401Line */ ]]>
+        UPDATE AF0102D
+           SET
+               SEQ_NO           = #{seqNo}
+             , APPR_DIV         = #{apprDiv}
+             , FNL_EDIT_DT      = GETDATE()
+             , FNL_EDIT_USER_ID = #{fnlEditUserId}
+         WHERE FLOW_NO = #{flowNo}
+           AND USER_ID = #{userId}
+           AND COMPANY_CD = #{companyCd}
+    </update>
+
+    <delete id="deleteAF0401Line" parameterType="map" >
+        <![CDATA[ /* af0401.deleteAF0401Line */ ]]>
+        DELETE
+          FROM AF0102D
+         WHERE FLOW_DTL_NO = #{flowDtlNo}
+           AND COMPANY_CD = #{companyCd}
+    </delete>
+</mapper>

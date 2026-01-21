@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--************************************************************************************
+* Program Name : AF0101
+* Description : 작업요청
+* Author :
+* Created Date :
+* SQL 목록
+***************************************************************************************
+* SQLID                 설명
+***************************************************************************************
+* retrieveAF0101List : 메뉴 목록 조회
+* insertAF0101 : 작업요청 목록 추가
+* updateAF0101 : 작업요청 목록 수정
+* deleteAF0101 : 작업요청 목록 삭제
+*************************************************************************************-->
+<mapper namespace="af0201">
+    <select id="retrieveAF0201List" parameterType="map" resultType="map" >
+        <![CDATA[ /* af0201.retrieveAF0201List */ ]]>
+        SELECT * FROM (
+            SELECT
+                   Y.FLOW_STS
+                 , dbo.FN_NAME(Y.FLOW_STS, 'FLOW_STS') FLOW_STS_NM
+                 , Y.APPR_YMD + ' ' + LEFT(ISNULL(Y.APPR_TIME,'00'),2) + ':' + RIGHT(ISNULL(Y.APPR_TIME,'00'),2) APPR_YMD
+                 , X.APPR_NO
+                 , X.TITLE
+                 , X.APPR_STS
+                 , dbo.FN_NAME(X.APPR_STS, 'APPR_STS') APPR_STS_NM
+                 , X.APPR_TP
+                 , dbo.FN_NAME(X.APPR_TP, 'APPR_TP') APPR_TP_NM
+                 , (SELECT STRING_AGG(A.DUTY_NO,',') WITHIN GROUP (ORDER BY A.DUTY_NO)
+                      FROM AF0101A A
+                     WHERE A.APPR_NO = X.APPR_NO AND A.COMPANY_CD = #{companyCd}) DUTY_NO
+                 , X.APPR_YMD + ' ' + LEFT(ISNULL(X.APPR_TIME,'00'),2) + ':' + RIGHT(ISNULL(X.APPR_TIME,'00'),2) APPR_SUMIT_YMD
+                 , Y.APPR_FLOW_NO
+                 , Y.FLOW_TRAN
+                 , Y.APPR_SEQ_NO
+                 , X.COMPANY_CD
+              FROM AF0101M X, AF0101D Y
+             WHERE X.APPR_NO = Y.APPR_NO
+               AND X.COMPANY_CD = Y.COMPANY_CD
+               AND X.COMPANY_CD = #{companyCd}
+               AND UPPER(Y.USER_ID) = UPPER(#{userId})
+               AND Y.APPR_SEQ_NO <![CDATA[ <> ]]> '999'
+               AND Y.FLOW_TRAN = 'P'
+               AND Y.APPR_DIV IN ('GR', 'AP')
+          <if test="apprStartYmd != null &amp;&amp; apprStartYmd != ''">
+            <if test="apprEndYmd != null &amp;&amp; apprEndYmd != ''">
+               AND X.APPR_YMD <![CDATA[ >= ]]> #{apprStartYmd}
+               AND X.APPR_YMD <![CDATA[ <= ]]> #{apprEndYmd}
+            </if>
+          </if>
+          <if test="apprSumitStartYmd != null &amp;&amp; apprSumitStartYmd != ''">
+            <if test="apprSumitEndYmd != null &amp;&amp; apprSumitEndYmd != ''">
+               AND Y.APPR_YMD <![CDATA[ >= ]]> #{apprSumitStartYmd}
+               AND Y.APPR_YMD <![CDATA[ <= ]]> #{apprSumitEndYmd}
+            </if>
+          </if>
+          <if test="fApprNo != null &amp;&amp; fApprNo != ''">
+               AND X.APPR_NO = #{fApprNo}
+          </if>
+          <if test="fApprNm != null &amp;&amp; fApprNm != ''">
+               AND UPPER(X.TITLE) LIKE '%' + UPPER(#{fApprNm}) + '%'
+          </if>
+          <if test="fApprSts != null &amp;&amp; fApprSts != ''">
+               AND X.APPR_STS IN (${fApprSts})
+          </if>
+          <if test="fDutyNo != null &amp;&amp; fDutyNo != ''">
+               AND X.DUTY_NO = #{fDutyNo}
+          </if>
+          <if test="fApprTp != null &amp;&amp; fApprTp != ''">
+               AND X.APPR_TP IN (${fApprTp})
+          </if>
+          <if test="fApprStsR != null &amp;&amp; fApprStsR != ''">
+               AND Y.FLOW_STS IN (${fApprStsR})
+          </if>
+          <if test="fFlowTran != null &amp;&amp; fFlowTran != ''">
+               AND Y.FLOW_TRAN IN (${fFlowTran})
+          </if>
+          <if test="fApprDiv != null &amp;&amp; fApprDiv != ''">
+               AND Y.APPR_DIV IN (${fApprDiv})
+          </if>
+           UNION ALL
+           SELECT
+                   Y.FLOW_STS
+                 , dbo.FN_NAME(Y.FLOW_STS, 'FLOW_STS') FLOW_STS_NM
+                 , Y.APPR_YMD + ' ' + LEFT(ISNULL(Y.APPR_TIME,'00'),2) + ':' + RIGHT(ISNULL(Y.APPR_TIME,'00'),2) APPR_YMD
+                 , X.APPR_NO
+                 , X.TITLE
+                 , X.APPR_STS
+                 , dbo.FN_NAME(X.APPR_STS, 'APPR_STS') APPR_STS_NM
+                 , X.APPR_TP
+                 , dbo.FN_NAME(X.APPR_TP, 'APPR_TP') APPR_TP_NM
+                 , (SELECT STRING_AGG(A.DUTY_NO,',') WITHIN GROUP (ORDER BY A.DUTY_NO)
+                      FROM AF0101A A
+                     WHERE A.APPR_NO = X.APPR_NO AND A.COMPANY_CD = #{companyCd}) DUTY_NO
+                 , X.APPR_YMD + ' ' + LEFT(ISNULL(X.APPR_TIME,'00'),2) + ':' + RIGHT(ISNULL(X.APPR_TIME,'00'),2) APPR_SUMIT_YMD
+                 , Y.APPR_FLOW_NO
+                 , Y.FLOW_TRAN
+                 , Y.APPR_SEQ_NO
+                 , X.COMPANY_CD
+              FROM AF0101M X, AF0101D Y
+             WHERE X.APPR_NO = Y.APPR_NO
+               AND X.COMPANY_CD = Y.COMPANY_CD
+               AND X.COMPANY_CD = #{companyCd}
+               AND UPPER(Y.USER_ID) = UPPER(#{userId})
+               AND Y.APPR_SEQ_NO <![CDATA[ <> ]]> '999'
+               AND (Y.FLOW_STS = 'C' OR Y.FLOW_STS = 'D')
+           <if test="apprStartYmd != null &amp;&amp; apprStartYmd != ''">
+             <if test="apprEndYmd != null &amp;&amp; apprEndYmd != ''">
+               AND X.APPR_YMD <![CDATA[ >= ]]> #{apprStartYmd}
+               AND X.APPR_YMD <![CDATA[ <= ]]> #{apprEndYmd}
+             </if>
+           </if>
+           <if test="apprSumitStartYmd != null &amp;&amp; apprSumitStartYmd != ''">
+             <if test="apprSumitEndYmd != null &amp;&amp; apprSumitEndYmd != ''">
+               AND Y.APPR_YMD <![CDATA[ >= ]]> #{apprSumitStartYmd}
+               AND Y.APPR_YMD <![CDATA[ <= ]]> #{apprSumitEndYmd}
+             </if>
+          </if>
+          <if test="fApprNo != null &amp;&amp; fApprNo != ''">
+               AND X.APPR_NO = #{fApprNo}
+          </if>
+          <if test="fApprNm != null &amp;&amp; fApprNm != ''">
+               AND UPPER(X.TITLE) LIKE '%' + UPPER(#{fApprNm}) + '%'
+          </if>
+          <if test="fApprSts != null &amp;&amp; fApprSts != ''">
+               AND X.APPR_STS IN (${fApprSts})
+          </if>
+          <if test="fDutyNo != null &amp;&amp; fDutyNo != ''">
+               AND X.DUTY_NO = #{fDutyNo}
+          </if>
+          <if test="fApprTp != null &amp;&amp; fApprTp != ''">
+               AND X.APPR_TP IN (${fApprTp})
+          </if>
+          <if test="fApprStsR != null &amp;&amp; fApprStsR != ''">
+               AND Y.FLOW_STS IN (${fApprStsR})
+          </if>
+          <if test="fFlowTran != null &amp;&amp; fFlowTran != ''">
+               AND Y.FLOW_TRAN IN (${fFlowTran})
+          </if>
+          <if test="fApprDiv != null &amp;&amp; fApprDiv != ''">
+               AND Y.APPR_DIV IN (${fApprDiv})
+          </if>
+          ) A
+         ORDER BY APPR_STS ASC, APPR_YMD DESC, APPR_NO DESC
+    </select>
+
+    <select id="retrieveAF0201SubList" parameterType="map" resultType="map" >
+        <![CDATA[ /* af0201.retrieveAF0201SubList */ ]]>
+        SELECT
+               X.APPR_SEQ_NO
+             , dbo.FN_NAME(X.FLOW_STS, 'FLOW_STS') FLOW_STS
+             , X.APPR_YMD + ' ' + LEFT(ISNULL(X.APPR_TIME,'00'),2) + ':' + RIGHT(ISNULL(X.APPR_TIME,'00'),2) APPR_YMD
+			 , CASE WHEN X.APPR_SEQ_NO = 0 THEN dbo.FN_NAME(X.FLOW_STS, 'FLOW_STS') ELSE dbo.FN_NAME(X.APPR_DIV, 'APPR_DIV') END APPR_DIV
+             , X.USER_ID  + ' / ' +  dbo.FN_NAME(X.USER_ID, 'USER')  + ' / ' +
+               (SELECT dbo.FN_NAME(A.ORG_CD, 'DEPT')
+                  FROM SC_USER A
+                 WHERE A.USER_ID = X.USER_ID AND A.COMPANY_CD = #{companyCd}) FLOW_USER_INFO
+             , X.APPR_DESC
+             , X.USER_ID
+             , X.APPR_FLOW_NO
+             , X.FLOW_TRAN
+             , X.COMPANY_CD
+          FROM AF0101D X
+         WHERE X.APPR_NO = #{apprNo}
+           AND X.COMPANY_CD = #{companyCd}
+           AND X.APPR_SEQ_NO <![CDATA[ <> ]]> '999'
+         ORDER BY X.APPR_SEQ_NO, X.USER_ID
+    </select>
+
+    <select id="retrieveMT0101Detail" parameterType="map" resultType="map" >
+        <![CDATA[ /* af0201.retrieveMT0101Detail */ ]]>
+        SELECT
+               (SELECT CLS_NM FROM EQ0201M WHERE COMPANY_CD = #{companyCd} AND PLANT_CODE = Y.PLANT_CODE AND FACTORY_CODE = Y.FACTORY_CODE AND CLS_CD = Y.EQ_LINE) + ' [' + Y.EQ_LINE + ']' AS EQ_LINE
+             , X.PM_NM + ' [' + X.PM_NO + ']' AS PM_NO
+             , Y.EQ_NM + ' [' + X.EQ_NO + ']' AS EQ_NO
+             , X.WO_GRD   --SELECTBOX
+             , X.CAL_CD   --SELECTBOX
+             , X.PRIOR_CD --SELECTBOX
+             , DBO.FN_NAME(X.PLAN_ORG_CD, 'DEPT') + ' [' + X.PLAN_ORG_CD + ']' AS PLAN_ORG_CD
+             , X.PM_HOUR
+             , X.LAST_PM_YMD
+             , DBO.FN_NAME(X.WORK_CNDT_CD, 'WORK_CNDT_CD') + '( ' + ISNULL(CONVERT(VARCHAR, X.WORK_CNDT_HOUR),'0') + 'H)' AS WORK_CNDT_CD
+             , X.PREV_PM_YMD
+             , X.PM_TP --SELECTBOX
+             , X.CYCLE_CD + ' ' + DBO.FN_NAME(X.CYCLE_TP, 'CYCLE_TP') AS CYCLE_CD
+             , X.DAY_WEEK --SELECTBOX
+             , X.WORK_DESC
+             , X.CMMNT
+          FROM MT0101M_R X
+         INNER JOIN EQ0101M Y ON (X.EQ_NO = Y.EQ_NO AND X.COMPANY_CD = Y.COMPANY_CD)
+         WHERE X.PM_REV_SEQ =#{pmRevSeq}
+           AND X.COMPANY_CD = #{companyCd}
+    </select>
+</mapper>
